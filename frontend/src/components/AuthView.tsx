@@ -1,0 +1,249 @@
+// src/components/AuthView.tsx
+import { useState, useEffect } from 'react'
+import { Lock, Mail, User, ArrowLeft } from 'lucide-react'
+import { ZonaEliteLogo } from '@/components/Logo'
+import { authApi } from '@/api/auth'
+import type { ViewState } from '@/types'
+
+// Google GSI global
+declare global {
+  interface Window { google?: any }
+}
+
+type AuthMode = 'login' | 'register' | 'recover'
+
+interface Props {
+  onNavigate: (v: ViewState) => void
+  onLogin: (token: string, user: any) => void
+}
+
+export function AuthView({ onNavigate, onLogin }: Props) {
+  const [mode, setMode] = useState<AuthMode>('login')
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  /* ── Google GSI ── */
+  useEffect(() => {
+    if (mode !== 'login') return
+
+    const init = () => {
+      if (!window.google) return
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID ?? '',
+        callback: handleGoogleResponse,
+      })
+      const btn = document.getElementById('google-btn')
+      if (btn) {
+        window.google.accounts.id.renderButton(btn, {
+          theme: 'outline', size: 'large', text: 'signin_with', width: 380,
+        })
+      }
+    }
+
+    if (window.google) { init(); return }
+
+    let script = document.querySelector<HTMLScriptElement>(
+      'script[src="https://accounts.google.com/gsi/client"]'
+    )
+    if (!script) {
+      script = document.createElement('script')
+      script.src = 'https://accounts.google.com/gsi/client'
+      script.async = true
+      script.defer = true
+      document.body.appendChild(script)
+    }
+    script.addEventListener('load', init)
+    return () => script!.removeEventListener('load', init)
+  }, [mode])
+
+  /* ── Handlers ── */
+  async function handleGoogleResponse(response: any) {
+    await submit(() => authApi.googleLogin(response.credential))
+  }
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault()
+    await submit(() => authApi.login(email, password))
+  }
+
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault()
+    await submit(() => authApi.register(name, email, password))
+  }
+
+  async function submit(fn: () => Promise<{ token: string; user: any }>) {
+    setLoading(true)
+    setError('')
+    try {
+      const { token, user } = await fn()
+      onLogin(token, user)
+      onNavigate(user.role)
+    } catch (err: any) {
+      setError(err.message ?? 'Error de conexión')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row fade-in text-foreground">
+
+      {/* ── Left panel (decorative) ── */}
+      <div className="hidden lg:flex lg:w-5/12 relative bg-card items-center justify-center p-16 border-r border-border overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(47_96%_53%/0.08)_0%,transparent_70%)]" />
+        <div className="relative z-10 text-center space-y-6">
+          <ZonaEliteLogo />
+          <h2 className="text-3xl font-heading font-bold uppercase leading-tight">
+            El Sistema de Reservas<br />Para Atletas de Verdad
+          </h2>
+          <p className="text-muted-foreground text-sm max-w-xs mx-auto">
+            Gestiona tus turnos, controla tu progreso y entrena en un entorno de élite.
+          </p>
+        </div>
+      </div>
+
+      {/* ── Right panel (form) ── */}
+      <div className="w-full lg:w-7/12 flex items-center justify-center p-8 relative">
+        <button
+          onClick={() => onNavigate('landing')}
+          className="absolute top-6 left-6 text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors"
+        >
+          <ArrowLeft size={15} /> Volver
+        </button>
+
+        <div className="w-full max-w-sm space-y-6">
+
+          {/* Error banner */}
+          {error && <div className="error-banner">{error}</div>}
+
+          {/* ── LOGIN ── */}
+          {mode === 'login' && (
+            <div className="space-y-6 animate-in">
+              <div>
+                <h1 className="text-3xl font-heading font-bold">Iniciar Sesión</h1>
+                <p className="text-muted-foreground text-sm mt-1">Accede a tu panel de reservas.</p>
+              </div>
+
+              <form className="space-y-4" onSubmit={handleLogin}>
+                <Field label="Correo" type="email" value={email} onChange={setEmail} placeholder="atleta@ejemplo.com" />
+                <Field
+                  label="Contraseña" type="password" value={password} onChange={setPassword}
+                  placeholder="••••••••"
+                  extra={
+                    <button type="button" onClick={() => setMode('recover')} className="text-xs text-primary hover:underline">
+                      ¿La olvidaste?
+                    </button>
+                  }
+                />
+                <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 mt-2">
+                  {loading ? 'Accediendo…' : 'Iniciar Sesión'}
+                </button>
+              </form>
+
+              {/* Google divider */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 border-t border-border" />
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">o continuar con</span>
+                  <div className="flex-1 border-t border-border" />
+                </div>
+                <div className="flex justify-center" id="google-btn" />
+              </div>
+
+              <p className="text-center text-sm text-muted-foreground">
+                ¿No tienes cuenta?{' '}
+                <button onClick={() => setMode('register')} className="text-foreground font-semibold hover:text-primary transition-colors">
+                  Regístrate
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* ── REGISTER ── */}
+          {mode === 'register' && (
+            <div className="space-y-6 animate-in">
+              <div>
+                <h1 className="text-3xl font-heading font-bold">Crear Cuenta</h1>
+                <p className="text-muted-foreground text-sm mt-1">Únete y reserva tus horarios.</p>
+              </div>
+              <form className="space-y-4" onSubmit={handleRegister}>
+                <Field label="Nombre Completo" type="text" value={name} onChange={setName} placeholder="Ej. Mateo Silva" />
+                <Field label="Correo" type="email" value={email} onChange={setEmail} placeholder="atleta@ejemplo.com" />
+                <Field label="Contraseña" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
+                <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 mt-2">
+                  {loading ? 'Creando cuenta…' : 'Crear Cuenta'}
+                </button>
+              </form>
+              <p className="text-center text-sm text-muted-foreground">
+                ¿Ya tienes cuenta?{' '}
+                <button onClick={() => setMode('login')} className="text-foreground font-semibold hover:text-primary transition-colors">
+                  Inicia sesión
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* ── RECOVER ── */}
+          {mode === 'recover' && (
+            <div className="space-y-6 animate-in">
+              <div>
+                <h1 className="text-3xl font-heading font-bold">Recuperar Acceso</h1>
+                <p className="text-muted-foreground text-sm mt-1">Te enviaremos un enlace de restauración.</p>
+              </div>
+              <form className="space-y-4" onSubmit={e => e.preventDefault()}>
+                <Field label="Correo" type="email" value={email} onChange={setEmail} placeholder="atleta@ejemplo.com" />
+                <button type="submit" className="btn-primary w-full py-3.5 mt-2">
+                  Enviar Enlace
+                </button>
+              </form>
+              <button
+                onClick={() => setMode('login')}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto"
+              >
+                <ArrowLeft size={14} /> Volver al Login
+              </button>
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Shared field component ── */
+const Field = ({
+  label, type, value, onChange, placeholder, extra,
+}: {
+  label: string
+  type: string
+  value: string
+  onChange: (v: string) => void
+  placeholder: string
+  extra?: React.ReactNode
+}) => (
+  <div className="space-y-1.5">
+    <div className="flex justify-between items-center">
+      <label className="text-sm font-medium">{label}</label>
+      {extra}
+    </div>
+    <div className="relative">
+      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
+        {type === 'email' ? <Mail size={16} /> : type === 'password' ? <Lock size={16} /> : <User size={16} />}
+      </span>
+      <input
+        type={type}
+        required
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="form-input"
+      />
+    </div>
+  </div>
+)
