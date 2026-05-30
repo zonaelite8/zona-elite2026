@@ -6,6 +6,7 @@ const authRoutes = require('./routes/auth.routes');
 const slotRoutes = require('./routes/slot.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const notificationRoutes = require('./routes/notification.routes');
+const { initializeDatabaseAndAdmin } = require('../setup_admin');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -21,6 +22,16 @@ app.use(express.json());
 // Check server status
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Zona Elite API is running smoothly' });
+});
+
+// Setup DB and Admin (useful for Render free tier)
+app.get('/api/setup', async (req, res) => {
+  try {
+    const message = await initializeDatabaseAndAdmin(false);
+    res.json({ success: true, message });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
 // Routes mounting

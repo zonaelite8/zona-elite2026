@@ -2,7 +2,7 @@ require('dotenv').config();
 const db = require('./src/config/db');
 const bcrypt = require('bcryptjs');
 
-async function initializeDatabaseAndAdmin() {
+async function initializeDatabaseAndAdmin(shouldExit = true) {
   try {
     console.log("Iniciando inicialización de la base de datos...");
 
@@ -105,11 +105,17 @@ async function initializeDatabaseAndAdmin() {
     }
 
     console.log("🎉 Inicialización de base de datos completada exitosamente.");
-    process.exit(0);
+    if (shouldExit) process.exit(0);
+    return "Base de datos inicializada y administrador creado/actualizado con éxito.";
   } catch (error) {
     console.error("❌ Error inicializando base de datos y administrador:", error);
-    process.exit(1);
+    if (shouldExit) process.exit(1);
+    throw error;
   }
 }
 
-initializeDatabaseAndAdmin();
+if (require.main === module) {
+  initializeDatabaseAndAdmin(true);
+}
+
+module.exports = { initializeDatabaseAndAdmin };
