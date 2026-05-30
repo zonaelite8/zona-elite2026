@@ -360,8 +360,8 @@ export function ClientDashboard({ onLogout, user }: any) {
                             {/* PERSONALIZADO */}
                             <div className="p-4 bg-card flex flex-col gap-2">
                               <div className="flex items-center gap-2 mb-1">
-                                <Activity size={14} className="text-chart-2" />
-                                <span className="text-xs font-bold uppercase tracking-wider text-chart-2">Personal.</span>
+                                <Activity size={14} className="text-emerald-400" />
+                                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Personal.</span>
                                 {block.personalizado && (
                                   <span className="ml-auto text-xs text-muted-foreground">
                                     {block.personalizado.bookings_count}/{block.personalizado.capacity}
@@ -413,7 +413,7 @@ export function ClientDashboard({ onLogout, user }: any) {
                         <div className="flex items-center gap-2 mb-1">
                           {res.modality === 'fuerza'
                             ? <Dumbbell size={14} className="text-primary" />
-                            : <Activity size={14} className="text-chart-2" />}
+                            : <Activity size={14} className="text-emerald-400" />}
                           <h4 className="font-heading font-bold uppercase text-sm">{res.modality}</h4>
                         </div>
                         <p className="text-muted-foreground text-sm flex items-center gap-1">

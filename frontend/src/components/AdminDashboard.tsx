@@ -73,7 +73,7 @@ const getModalityLabel = (block: any) => {
     return <span className="bg-primary/20 text-primary px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-primary/30">FUERZA</span>;
   }
   if (showPers) {
-    return <span className="bg-chart-2/20 text-chart-2 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-chart-2/30">PERSONALIZADO</span>;
+    return <span className="bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-emerald-500/30">PERSONALIZADO</span>;
   }
   return <span className="bg-red-500/20 text-red-400 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-red-500/30">BLOQUEADO</span>;
 };
@@ -448,14 +448,25 @@ export function AdminDashboard({ onLogout }: any) {
                     </td>
                   </tr>
                 )}
-                {groupedBlocks.map((block: any) => {
+                 {groupedBlocks.map((block: any) => {
                   const dateStr = block.date.includes('T') ? block.date.split('T')[0] : block.date;
                   const blockKey = `${dateStr}_${block.start_time}`;
                   const isExpanded = expandedBlockKey === blockKey;
 
+                  const hasFuerza = block.fuerza && !block.fuerza.is_blocked;
+                  const hasPers = block.personalizado && !block.personalizado.is_blocked;
+                  let borderLeftClass = 'border-l-4 border-l-purple-500'; // AMBAS
+                  if (!hasFuerza && !hasPers) {
+                    borderLeftClass = 'border-l-4 border-l-red-500/80'; // BLOQUEADO
+                  } else if (hasFuerza && !hasPers) {
+                    borderLeftClass = 'border-l-4 border-l-primary'; // FUERZA
+                  } else if (!hasFuerza && hasPers) {
+                    borderLeftClass = 'border-l-4 border-l-emerald-500'; // PERSONALIZADO
+                  }
+
                   return (
                     <React.Fragment key={blockKey}>
-                      <tr className="hover:bg-secondary/20 transition-colors">
+                      <tr className={`hover:bg-secondary/20 transition-colors border-b border-border ${borderLeftClass}`}>
                         <td className="p-4 font-semibold">{format(new Date(block.date), 'dd MMM yyyy', { locale: es })}</td>
                         <td className="p-4 font-heading font-bold text-lg">{formatTo12Hour(block.start_time)}</td>
                         <td className="p-4">
@@ -485,7 +496,7 @@ export function AdminDashboard({ onLogout }: any) {
                                 </span>
                                 <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden max-w-[80px]">
                                   <div
-                                    className="h-full bg-chart-2"
+                                    className="h-full bg-emerald-500"
                                     style={{ width: `${Math.min((block.personalizado.bookings.length / block.personalizado.capacity) * 100, 100)}%` }}
                                   />
                                 </div>
@@ -569,7 +580,7 @@ export function AdminDashboard({ onLogout }: any) {
                               {/* PERSONALIZADO ATHLETES */}
                               <div>
                                 <div className="flex justify-between items-center mb-3 border-b border-border pb-2">
-                                  <h4 className="text-xs font-bold uppercase text-chart-2 tracking-wider flex items-center gap-1">
+                                  <h4 className="text-xs font-bold uppercase text-emerald-400 tracking-wider flex items-center gap-1">
                                     🎯 Personalizado ({(block.personalizado?.bookings?.length || 0)}/{(block.personalizado?.capacity || 2)})
                                     {block.personalizado?.is_blocked && (
                                       <span className="ml-2 bg-red-500/20 text-red-400 border border-red-500/30 text-[10px] px-1.5 py-0.5 rounded font-bold">BLOQUEADO</span>
