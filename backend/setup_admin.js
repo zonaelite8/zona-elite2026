@@ -10,7 +10,20 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     await db.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
     console.log("Extension 'uuid-ossp' habilitada.");
 
-    // 2. Crear tabla users
+    // 2. Crear tabla plans
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS plans (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) UNIQUE NOT NULL,
+        default_classes INT DEFAULT 0,
+        price DECIMAL(10, 2) DEFAULT 0.00,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("Tabla 'plans' verificada.");
+
+    // 3. Crear tabla users
     await db.query(`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -100,7 +113,23 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
       console.log("✅ Contraseña de administrador actualizada a 'Zonaelite2026.'");
     }
 
-    // 8. Seed de slots por defecto si la tabla está vacía
+    // 8. Seed de planes por defecto
+    const plansCountQuery = await db.query('SELECT COUNT(*) FROM plans');
+    const plansCount = parseInt(plansCountQuery.rows[0].count, 10);
+    if (plansCount === 0) {
+      await db.query(`
+        INSERT INTO plans (name, default_classes) VALUES 
+        ('Sin Plan', 0),
+        ('Clase Suelta', 1),
+        ('Plan 12 Clases', 12),
+        ('Mensualidad Fuerza', 20),
+        ('Mensualidad Ilimitada', 999),
+        ('Personalizado', 0)
+      `);
+      console.log("Se insertaron planes por defecto.");
+    }
+
+    // 9. Seed de slots por defecto si la tabla está vacía
     const slotsCountQuery = await db.query('SELECT COUNT(*) FROM slots');
     const slotsCount = parseInt(slotsCountQuery.rows[0].count, 10);
     if (slotsCount === 0) {

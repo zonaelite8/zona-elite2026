@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Users, AlertCircle, CheckCircle2, LogOut, X, Trash2, CalendarPlus, Bell, ChevronDown, Calendar, Clock, Menu
+  Users, AlertCircle, CheckCircle2, LogOut, X, Trash2, CalendarPlus, Bell, ChevronDown, Calendar, Clock, Menu, ClipboardList, Plus
 } from 'lucide-react';
 import { format, addDays, subDays, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -8,6 +8,7 @@ import { slotsApi } from '../api/slots';
 import { bookingsApi } from '../api/bookings';
 import { notificationsApi, Notification } from '../api/notifications';
 import { usersApi, User } from '../api/users';
+import { plansApi, Plan } from '../api/plans';
 import { CustomDatePicker } from './CustomDatePicker';
 import { CustomTimePicker } from './CustomTimePicker';
 
@@ -110,7 +111,7 @@ const formatTo12Hour = (timeStr: string) => {
 };
 
 export function AdminDashboard({ onLogout }: any) {
-  const [activeTab, setActiveTab] = useState<'calendario' | 'horarios' | 'usuarios'>('calendario');
+  const [activeTab, setActiveTab] = useState<'calendario' | 'horarios' | 'usuarios' | 'planes'>('calendario');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
   const [baseDate, setBaseDate] = useState<Date>(startOfToday());
@@ -119,6 +120,7 @@ export function AdminDashboard({ onLogout }: any) {
   const [calendarSlots, setCalendarSlots] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [usersList, setUsersList] = useState<User[]>([]);
+  const [plansList, setPlansList] = useState<Plan[]>([]);
   
   const [showNotifications, setShowNotifications] = useState(false);
   const [expandedBlockKey, setExpandedBlockKey] = useState<string | null>(null);
@@ -127,6 +129,8 @@ export function AdminDashboard({ onLogout }: any) {
   const [manualSlot, setManualSlot] = useState({ date: format(new Date(), 'yyyy-MM-dd'), start_time: '08:00', end_time: '09:00' });
   const [createFuerza, setCreateFuerza] = useState(true);
   const [createPersonalizado, setCreatePersonalizado] = useState(true);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [newPlan, setNewPlan] = useState({ name: '', default_classes: 0, price: 0 });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void; } | null>(null);
 
@@ -165,10 +169,20 @@ export function AdminDashboard({ onLogout }: any) {
     }
   };
 
+  const fetchPlans = async () => {
+    try {
+      const data = await plansApi.getAll();
+      setPlansList(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   useEffect(() => {
     fetchSlots();
     fetchNotifications();
     fetchUsers();
+    fetchPlans();
     const interval = setInterval(() => {
       fetchSlots();
       fetchNotifications();
@@ -255,12 +269,50 @@ export function AdminDashboard({ onLogout }: any) {
 
   const handleUpdateUserAdmin = async (id: string, data: { available_classes?: number, plan_type?: string }) => {
     try {
+      // Si cambian el plan, podríamos actualizar las clases por defecto opcionalmente
+      // pero para mantenerlo simple y seguro, si el usuario elige un plan,
+      // actualizamos el nombre del plan en la BD
       await usersApi.updateClasses(id, data);
       showToast('Datos de usuario actualizados');
       setUsersList(usersList.map(u => u.id === id ? { ...u, ...data } : u));
     } catch (error: any) {
       showToast(error.message || 'Error', 'error');
     }
+  };
+
+  const handleCreatePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      await plansApi.create(newPlan);
+      showToast('¡Plan creado con éxito!');
+      playSuccessSound();
+      setShowPlanModal(false);
+      setNewPlan({ name: '', default_classes: 0, price: 0 });
+      await fetchPlans();
+    } catch (error: any) {
+      showToast(error.message || 'Error al crear plan', 'error');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDeletePlan = (id: number) => {
+    setConfirmModal({
+      title: '¿Eliminar Plan?',
+      message: '¿Estás seguro de eliminar este plan?',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          await plansApi.delete(id);
+          playCancelSound();
+          showToast('¡Plan eliminado con éxito!');
+          await fetchPlans();
+        } catch (error: any) {
+          showToast(error.message || 'Error al eliminar', 'error');
+        }
+      }
+    });
   };
 
   // KPIs
@@ -297,6 +349,9 @@ export function AdminDashboard({ onLogout }: any) {
           <button onClick={() => { setActiveTab('usuarios'); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'usuarios' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}>
             <Users size={20} /> Usuarios
           </button>
+          <button onClick={() => { setActiveTab('planes'); setSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'planes' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}>
+            <ClipboardList size={20} /> Planes
+          </button>
         </nav>
         <div className="p-4 border-t border-border">
           <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-500 hover:bg-red-500/10 transition-colors font-medium">
@@ -312,7 +367,7 @@ export function AdminDashboard({ onLogout }: any) {
               <Menu size={24} />
             </button>
             <h2 className="text-2xl font-bold tracking-wider font-heading uppercase">
-              {activeTab === 'calendario' ? 'Calendario de Reservas' : activeTab === 'horarios' ? 'Gestión de Horarios' : 'Usuarios Registrados'}
+              {activeTab === 'calendario' ? 'Calendario de Reservas' : activeTab === 'horarios' ? 'Gestión de Horarios' : activeTab === 'planes' ? 'Gestión de Planes' : 'Usuarios Registrados'}
             </h2>
           </div>
           <div className="flex items-center gap-4">
@@ -518,30 +573,30 @@ export function AdminDashboard({ onLogout }: any) {
           {activeTab === 'usuarios' && (
             <div className="max-w-6xl mx-auto space-y-6">
               <h3 className="text-xl font-heading font-bold uppercase mb-4">Usuarios ({usersList.length})</h3>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden">
-                <table className="w-full text-left border-collapse">
+              <div className="bg-card border border-border rounded-2xl overflow-hidden w-full">
+                <table className="w-full text-left border-collapse table-fixed text-[9px] sm:text-[10px] lg:text-sm">
                   <thead>
-                    <tr className="border-b border-border text-xs uppercase tracking-wider text-muted-foreground font-semibold bg-secondary/30">
-                      <th className="p-4">Nombre</th>
-                      <th className="p-4">Email</th>
-                      <th className="p-4">Teléfono</th>
-                      <th className="p-4">Cédula</th>
-                      <th className="p-4">Plan</th>
-                      <th className="p-4">Clases Disp.</th>
-                      <th className="p-4">Registrado</th>
+                    <tr className="border-b border-border text-[8px] sm:text-[9px] lg:text-xs uppercase tracking-wider text-muted-foreground font-semibold bg-secondary/30">
+                      <th className="px-1 py-2 lg:p-4 w-[16%] truncate" title="Nombre">Nombre</th>
+                      <th className="px-1 py-2 lg:p-4 w-[18%] truncate" title="Email">Email</th>
+                      <th className="px-1 py-2 lg:p-4 w-[14%] truncate" title="Teléfono">Teléfono</th>
+                      <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Cédula">Cédula</th>
+                      <th className="px-1 py-2 lg:p-4 w-[15%] truncate" title="Plan">Plan</th>
+                      <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Clases Disp.">Clases</th>
+                      <th className="px-1 py-2 lg:p-4 w-[13%] truncate" title="Registrado">Registro</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {usersList.length === 0 && <tr><td colSpan={5} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
+                    {usersList.length === 0 && <tr><td colSpan={7} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
                     {usersList.map((u: User) => (
                       <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
-                        <td className="p-4 font-bold">{u.name}</td>
-                        <td className="p-4 text-muted-foreground text-sm">{u.email}</td>
-                        <td className="p-4 text-muted-foreground text-sm">{u.phone || '-'}</td>
-                        <td className="p-4 text-muted-foreground text-sm">{u.cedula || '-'}</td>
-                        <td className="p-4">
+                        <td className="px-1 py-2 lg:p-4 font-bold truncate" title={u.name}>{u.name}</td>
+                        <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={u.email}>{u.email}</td>
+                        <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={u.phone || '-'}>{u.phone || '-'}</td>
+                        <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={u.cedula || '-'}>{u.cedula || '-'}</td>
+                        <td className="px-1 py-2 lg:p-4 truncate">
                           <select 
-                            className="bg-background border border-border rounded p-1 text-sm text-foreground font-semibold focus:outline-none focus:border-primary"
+                            className="bg-background border border-border rounded px-0.5 py-0.5 text-[8px] sm:text-[9px] lg:text-sm text-foreground font-semibold focus:outline-none focus:border-primary w-full max-w-[120px] truncate"
                             value={u.plan_type || 'Sin Plan'}
                             onChange={(e) => {
                               if (e.target.value !== u.plan_type) {
@@ -549,28 +604,61 @@ export function AdminDashboard({ onLogout }: any) {
                               }
                             }}
                           >
-                            <option value="Sin Plan">Sin Plan</option>
-                            <option value="Clase Suelta">Clase Suelta</option>
-                            <option value="Plan 12 Clases">Plan 12 Clases</option>
-                            <option value="Mensualidad Fuerza">Mensualidad Fuerza</option>
-                            <option value="Mensualidad Ilimitada">Mensualidad Ilimitada</option>
-                            <option value="Personalizado">Personalizado</option>
+                            {!plansList.find(p => p.name === (u.plan_type || 'Sin Plan')) && <option value={u.plan_type || 'Sin Plan'}>{u.plan_type || 'Sin Plan'}</option>}
+                            {plansList.map(p => (
+                              <option key={p.id} value={p.name}>{p.name}</option>
+                            ))}
                           </select>
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            <input 
-                              type="number" 
-                              className="w-16 bg-background border border-border rounded p-1 text-center font-bold"
-                              defaultValue={u.available_classes || 0}
-                              onBlur={(e) => {
-                                const val = parseInt(e.target.value);
-                                if (!isNaN(val) && val !== u.available_classes) handleUpdateUserAdmin(u.id, { available_classes: val });
-                              }}
-                            />
-                          </div>
+                        <td className="px-1 py-2 lg:p-4">
+                          <input 
+                            type="number" 
+                            className="w-full max-w-[40px] lg:max-w-[64px] bg-background border border-border rounded px-0.5 py-0.5 text-center font-bold text-[8px] sm:text-[9px] lg:text-sm"
+                            defaultValue={u.available_classes || 0}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (!isNaN(val) && val !== u.available_classes) handleUpdateUserAdmin(u.id, { available_classes: val });
+                            }}
+                          />
                         </td>
-                        <td className="p-4 text-sm text-muted-foreground">{format(new Date(u.created_at), 'dd/MM/yyyy')}</td>
+                        <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={format(new Date(u.created_at), 'dd/MM/yyyy')}>{format(new Date(u.created_at), 'dd/MM/yyyy')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* TAB PLANES */}
+          {activeTab === 'planes' && (
+            <div className="max-w-6xl mx-auto space-y-6">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xl font-heading font-bold uppercase mb-4">Gestión de Planes ({plansList.length})</h3>
+                <button onClick={() => setShowPlanModal(true)} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
+                  <Plus size={18} /> Añadir Plan
+                </button>
+              </div>
+              <div className="bg-card border border-border rounded-2xl overflow-hidden w-full">
+                <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                  <thead>
+                    <tr className="border-b border-border uppercase tracking-wider text-muted-foreground font-semibold bg-secondary/30">
+                      <th className="px-4 py-4">Nombre del Plan</th>
+                      <th className="px-4 py-4">Clases por Defecto</th>
+                      <th className="px-4 py-4 text-center">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {plansList.length === 0 && <tr><td colSpan={3} className="p-10 text-center text-muted-foreground">No hay planes creados.</td></tr>}
+                    {plansList.map((p) => (
+                      <tr key={p.id} className="hover:bg-secondary/20 transition-colors">
+                        <td className="px-4 py-4 font-bold">{p.name}</td>
+                        <td className="px-4 py-4 text-muted-foreground">{p.default_classes}</td>
+                        <td className="px-4 py-4 text-center">
+                          <button onClick={() => handleDeletePlan(p.id)} className="text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white p-2 rounded-lg transition-all" title="Eliminar Plan">
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -630,6 +718,44 @@ export function AdminDashboard({ onLogout }: any) {
               </div>
               <button type="submit" disabled={isCreating} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed">
                 {isCreating ? 'Guardando...' : 'Crear'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CREAR PLAN */}
+      {showPlanModal && (
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowPlanModal(false); }}>
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-border flex justify-between items-center bg-secondary/30">
+              <h3 className="font-heading font-bold uppercase text-base">Crear Nuevo Plan</h3>
+              <button type="button" onClick={() => setShowPlanModal(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-secondary"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleCreatePlan} className="p-5 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Nombre del Plan</label>
+                <input 
+                  type="text" 
+                  required
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-primary"
+                  value={newPlan.name}
+                  onChange={e => setNewPlan(s => ({ ...s, name: e.target.value }))}
+                  placeholder="Ej: Plan 20 Clases"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Clases por defecto (0 para ilimitado)</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-primary"
+                  value={newPlan.default_classes}
+                  onChange={e => setNewPlan(s => ({ ...s, default_classes: parseInt(e.target.value) || 0 }))}
+                />
+              </div>
+              <button type="submit" disabled={isCreating} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2">
+                {isCreating ? 'Guardando...' : 'Crear Plan'}
               </button>
             </form>
           </div>

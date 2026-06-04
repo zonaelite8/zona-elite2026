@@ -7,6 +7,7 @@ const slotRoutes = require('./routes/slot.routes');
 const bookingRoutes = require('./routes/booking.routes');
 const notificationRoutes = require('./routes/notification.routes');
 const userRoutes = require('./routes/user.routes');
+const planRoutes = require('./routes/plan.routes');
 const { initializeDatabaseAndAdmin } = require('../setup_admin');
 
 const app = express();
@@ -46,6 +47,7 @@ app.use('/api/slots', slotRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/admin/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/plans', planRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
