@@ -43,6 +43,8 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)');
     await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cedula VARCHAR(50)');
     await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_type VARCHAR(100) DEFAULT \'Sin Plan\'');
+    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE');
+    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token VARCHAR(255)');
     console.log("Tabla 'users' verificada.");
 
     // 3. Crear tabla slots
@@ -101,13 +103,13 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     const adminCheck = await db.query("SELECT id FROM users WHERE email = 'zonaelite8@gmail.com'");
     if (adminCheck.rows.length === 0) {
       await db.query(
-        "INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4)",
+        "INSERT INTO users (name, email, password_hash, role, is_verified) VALUES ($1, $2, $3, $4, true)",
         ['Administrador', 'zonaelite8@gmail.com', hash, 'admin']
       );
       console.log("✅ Usuario administrador creado: zonaelite8@gmail.com / Zonaelite2026.");
     } else {
       await db.query(
-        "UPDATE users SET password_hash = $1 WHERE email = 'zonaelite8@gmail.com'",
+        "UPDATE users SET password_hash = $1, is_verified = true WHERE email = 'zonaelite8@gmail.com'",
         [hash]
       );
       console.log("✅ Contraseña de administrador actualizada a 'Zonaelite2026.'");

@@ -1,7 +1,9 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const db = require('../config/db');
+const { sendEmail } = require('../services/email.service');
 require('dotenv').config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -34,20 +36,35 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    // Generate verification token
+    const verifyToken = crypto.randomBytes(20).toString('hex');
+
     // Insert user (default role is client unless specified)
     const userRole = role === 'admin' ? 'admin' : 'client';
     const result = await db.query(
-      'INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, phone, cedula',
-      [name, email, passwordHash, userRole]
+      'INSERT INTO users (name, email, password_hash, role, is_verified, verify_token) VALUES ($1, $2, $3, $4, false, $5) RETURNING id, name, email, role, phone, cedula',
+      [name, email, passwordHash, userRole, verifyToken]
     );
 
     const user = result.rows[0];
-    const token = generateToken(user);
+
+    // Send verification email
+    const frontendUrl = process.env.FRONTEND_URL || 'https://zona-elite2026.vercel.app';
+    const verifyLink = `${frontendUrl}?verify=${verifyToken}`;
+    const emailHtml = `
+      <h2>¡Bienvenido a Zona Élite, ${name}!</h2>
+      <p>Para activar tu cuenta y poder agendar tus entrenamientos, haz clic en el siguiente enlace:</p>
+      <br>
+      <a href="${verifyLink}" style="display:inline-block;padding:12px 24px;background:#f5b927;color:#000;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px;">Verificar mi cuenta</a>
+      <br><br>
+      <p>Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
+      <p>${verifyLink}</p>
+    `;
+    await sendEmail(email, 'Verifica tu cuenta - Zona Élite', 'Haz clic en el enlace para verificar tu cuenta', emailHtml);
 
     return res.status(210).json({
       message: 'User registered successfully',
-      token,
-      user
+      needsVerification: true
     });
   } catch (error) {
     console.error('Error during registration:', error);
@@ -74,6 +91,10 @@ const login = async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    if (!user.is_verified) {
+      return res.status(403).json({ error: 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.' });
     }
 
     const token = generateToken(user);
@@ -120,7 +141,7 @@ const googleLogin = async (req, res) => {
     if (!user) {
       // Create user if not registered
       const insertResult = await db.query(
-        'INSERT INTO users (name, email, google_id, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role, phone, cedula',
+        'INSERT INTO users (name, email, google_id, role, is_verified) VALUES ($1, $2, $3, $4, true) RETURNING id, name, email, role, phone, cedula',
         [name, email, googleId, 'client'] // Default Google users are clients
       );
       user = insertResult.rows[0];
@@ -184,9 +205,25 @@ const updateProfile = async (req, res) => {
   }
 };
 
+// Verify Email Endpoint
+const verifyEmail = async (req, res) => {
+  const { token } = req.params;
+  try {
+    const result = await db.query('UPDATE users SET is_verified = true, verify_token = NULL WHERE verify_token = $1 RETURNING id', [token]);
+    if (result.rows.length === 0) {
+      return res.status(400).json({ error: 'Enlace inválido o expirado' });
+    }
+    return res.json({ message: 'Cuenta verificada exitosamente' });
+  } catch (error) {
+    console.error('Error verifying email:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   register,
   login,
   googleLogin,
-  updateProfile
+  updateProfile,
+  verifyEmail
 };

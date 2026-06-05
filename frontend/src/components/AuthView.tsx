@@ -22,6 +22,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function handleGoogleSuccess(credentialResponse: any) {
@@ -41,12 +42,29 @@ export function AuthView({ onNavigate, onLogin }: Props) {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
-    await submit(() => authApi.register(name, email, password))
+    setLoading(true)
+    setError('')
+    setSuccess('')
+    try {
+      const response = await authApi.register(name, email, password)
+      if ((response as any).needsVerification) {
+        setMode('login')
+        setSuccess('¡Registro exitoso! Revisa tu bandeja de entrada para verificar tu cuenta.')
+      } else {
+        onLogin(response.token, response.user)
+        onNavigate(response.user.role)
+      }
+    } catch (err: any) {
+      setError(err.message ?? 'Error de conexión')
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function submit(fn: () => Promise<{ token: string; user: any }>) {
     setLoading(true)
     setError('')
+    setSuccess('')
     try {
       const { token, user } = await fn()
       onLogin(token, user)
@@ -88,8 +106,9 @@ export function AuthView({ onNavigate, onLogin }: Props) {
 
         <div className="w-full max-w-sm space-y-6">
 
-          {/* Error banner */}
-          {error && <div className="error-banner">{error}</div>}
+          {/* Messages banner */}
+          {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/50 text-red-500 text-sm font-medium animate-in">{error}</div>}
+          {success && <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/50 text-emerald-500 text-sm font-medium animate-in">{success}</div>}
 
           {/* ── LOGIN ── */}
           {mode === 'login' && (

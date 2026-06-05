@@ -22,4 +22,7 @@ export const authApi = {
 
   updateProfile: (name: string, phone: string, cedula: string) =>
     api.put<AuthResponse>('/auth/profile', { name, phone, cedula }),
+
+  verifyEmail: (token: string) =>
+    api.get<{ message: string }>(`/auth/verify-email/${token}`),
 }
