@@ -53,7 +53,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
         setSuccess('¡Registro exitoso! Ingresa el código que acabamos de enviar a tu correo.')
       } else {
         onLogin(response.token, response.user)
-        onNavigate(response.user.role)
+        onNavigate(response.user.role as ViewState)
       }
     } catch (err: any) {
       setError(err.message ?? 'Error de conexión')
@@ -74,7 +74,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     try {
       const { token, user } = await fn()
       onLogin(token, user)
-      onNavigate(user.role)
+      onNavigate(user.role as ViewState)
     } catch (err: any) {
       setError(err.message ?? 'Error de conexión')
     } finally {
