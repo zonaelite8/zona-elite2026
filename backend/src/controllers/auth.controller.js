@@ -36,8 +36,8 @@ const register = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Generate verification token
-    const verifyToken = crypto.randomBytes(20).toString('hex');
+    // Generate 6-digit verification code
+    const verifyToken = Math.floor(100000 + Math.random() * 900000).toString();
 
     // Insert user (default role is client unless specified)
     const userRole = role === 'admin' ? 'admin' : 'client';
@@ -49,16 +49,13 @@ const register = async (req, res) => {
     const user = result.rows[0];
 
     // Send verification email
-    const frontendUrl = process.env.FRONTEND_URL || 'https://zona-elite2026.vercel.app';
-    const verifyLink = `${frontendUrl}?verify=${verifyToken}`;
     const emailHtml = `
       <h2>¡Bienvenido a Zona Élite, ${name}!</h2>
-      <p>Para activar tu cuenta y poder agendar tus entrenamientos, haz clic en el siguiente enlace:</p>
-      <br>
-      <a href="${verifyLink}" style="display:inline-block;padding:12px 24px;background:#f5b927;color:#000;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px;">Verificar mi cuenta</a>
-      <br><br>
-      <p>Si el botón no funciona, copia y pega este enlace en tu navegador:</p>
-      <p>${verifyLink}</p>
+      <p>Para activar tu cuenta y poder agendar tus entrenamientos, ingresa el siguiente código en la página web:</p>
+      <div style="background:#f4f4f5;padding:20px;border-radius:10px;text-align:center;margin:20px 0;">
+        <span style="font-size:32px;font-weight:bold;letter-spacing:5px;color:#f5b927;background:#18181b;padding:10px 20px;border-radius:8px;">${verifyToken}</span>
+      </div>
+      <p>Este código es confidencial. Si no solicitaste esta cuenta, puedes ignorar este correo.</p>
     `;
     await sendEmail(email, 'Verifica tu cuenta - Zona Élite', 'Haz clic en el enlace para verificar tu cuenta', emailHtml);
 
@@ -205,17 +202,30 @@ const updateProfile = async (req, res) => {
   }
 };
 
-// Verify Email Endpoint
-const verifyEmail = async (req, res) => {
-  const { token } = req.params;
+// Verify Code Endpoint (replaces verifyEmail)
+const verifyCode = async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) {
+    return res.status(400).json({ error: 'Correo y código son requeridos' });
+  }
+
   try {
-    const result = await db.query('UPDATE users SET is_verified = true, verify_token = NULL WHERE verify_token = $1 RETURNING id', [token]);
+    const result = await db.query('UPDATE users SET is_verified = true, verify_token = NULL WHERE email = $1 AND verify_token = $2 RETURNING id, name, email, role, phone, cedula', [email, code]);
+    
     if (result.rows.length === 0) {
-      return res.status(400).json({ error: 'Enlace inválido o expirado' });
+      return res.status(400).json({ error: 'Código incorrecto o cuenta ya verificada' });
     }
-    return res.json({ message: 'Cuenta verificada exitosamente' });
+    
+    const user = result.rows[0];
+    const token = generateToken(user);
+
+    return res.json({ 
+      message: 'Cuenta verificada exitosamente',
+      token,
+      user
+    });
   } catch (error) {
-    console.error('Error verifying email:', error);
+    console.error('Error verifying code:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
@@ -225,5 +235,5 @@ module.exports = {
   login,
   googleLogin,
   updateProfile,
-  verifyEmail
+  verifyCode
 };

@@ -6,7 +6,6 @@ import { AdminDashboard } from '@/components/AdminDashboard'
 import { ClientDashboard } from '@/components/ClientDashboard'
 import { useSession }    from '@/hooks/useSession'
 import { CancelBookingView } from '@/components/CancelBookingView'
-import { VerifyEmailView } from '@/components/VerifyEmailView'
 
 export default function App() {
   const { user, view, setView, login, logout, checking } = useSession()
@@ -18,12 +17,6 @@ export default function App() {
     if (token) {
       return <CancelBookingView token={token} />;
     }
-  }
-
-  // Intercept /?verify=TOKEN
-  const verifyToken = url.searchParams.get('verify');
-  if (verifyToken) {
-    return <VerifyEmailView token={verifyToken} />;
   }
 
   if (checking) {

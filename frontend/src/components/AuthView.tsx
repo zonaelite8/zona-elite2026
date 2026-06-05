@@ -9,7 +9,7 @@ import { GoogleLogin } from '@react-oauth/google'
 
 // Remove global google interface since we use @react-oauth/google
 
-type AuthMode = 'login' | 'register' | 'recover'
+type AuthMode = 'login' | 'register' | 'recover' | 'verify'
 
 interface Props {
   onNavigate: (v: ViewState) => void
@@ -21,6 +21,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [loading, setLoading] = useState(false)
@@ -48,8 +49,8 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     try {
       const response = await authApi.register(name, email, password)
       if ((response as any).needsVerification) {
-        setMode('login')
-        setSuccess('¡Registro exitoso! Revisa tu bandeja de entrada para verificar tu cuenta.')
+        setMode('verify')
+        setSuccess('¡Registro exitoso! Ingresa el código que acabamos de enviar a tu correo.')
       } else {
         onLogin(response.token, response.user)
         onNavigate(response.user.role)
@@ -59,6 +60,11 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleVerifyCode(e: React.FormEvent) {
+    e.preventDefault()
+    await submit(() => authApi.verifyCode(email, code))
   }
 
   async function submit(fn: () => Promise<{ token: string; user: any }>) {
@@ -220,6 +226,41 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                   Enviar Enlace
                 </button>
               </form>
+              <button
+                onClick={() => setMode('login')}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto"
+              >
+                <ArrowLeft size={14} /> Volver al Login
+              </button>
+            </div>
+          )}
+
+          {/* ── VERIFY CODE ── */}
+          {mode === 'verify' && (
+            <div className="space-y-6 animate-in">
+              <div>
+                <h1 className="text-3xl font-heading font-bold">Verificar Correo</h1>
+                <p className="text-muted-foreground text-sm mt-1">Hemos enviado un código a <strong className="text-foreground">{email}</strong>.</p>
+              </div>
+
+              <form className="space-y-4" onSubmit={handleVerifyCode}>
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-center block">Código de 6 dígitos</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={code}
+                    onChange={e => setCode(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="123456"
+                    className="form-input text-center text-3xl tracking-[0.5em] font-bold py-4"
+                  />
+                </div>
+                <button type="submit" disabled={loading || code.length !== 6} className="btn-primary w-full py-3.5 mt-2">
+                  {loading ? 'Verificando…' : 'Confirmar y Entrar'}
+                </button>
+              </form>
+
               <button
                 onClick={() => setMode('login')}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto"
