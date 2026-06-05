@@ -8,7 +8,8 @@ import {
   Clock,
   LogOut,
   Trash2,
-  Lock
+  Lock,
+  CheckCircle2
 } from 'lucide-react';
 import { format, addDays, subDays, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
