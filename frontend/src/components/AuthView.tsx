@@ -18,8 +18,7 @@ interface Props {
 
 export function AuthView({ onNavigate, onLogin }: Props) {
   const [mode, setMode] = useState<AuthMode>('login')
-  // `name` unused since we removed manual registration
-  // const [name, setName] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -40,7 +39,10 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     await submit(() => authApi.login(email, password))
   }
 
-
+  async function handleRegister(e: React.FormEvent) {
+    e.preventDefault()
+    await submit(() => authApi.register(name, email, password))
+  }
 
   async function submit(fn: () => Promise<{ token: string; user: any }>) {
     setLoading(true)
@@ -148,20 +150,35 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                 <h1 className="text-3xl font-heading font-bold">Crear Cuenta</h1>
                 <p className="text-muted-foreground text-sm mt-1">Únete y reserva tus horarios.</p>
               </div>
-                <p className="text-muted-foreground text-sm mt-1 mb-6 text-center bg-secondary/30 p-3 rounded-lg border border-border">
-                  Para garantizar la seguridad y validación de los correos, el registro se realiza exclusivamente a través de Google.
-                </p>
-              
-              <div className="flex justify-center mt-4 py-8 bg-secondary/20 rounded-xl border border-border">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={handleGoogleError}
-                  theme="filled_blue"
-                  size="large"
-                  text="signup_with"
-                  width="300px"
-                />
+
+              <form className="space-y-4" onSubmit={handleRegister}>
+                <Field label="Nombre Completo" type="text" value={name} onChange={setName} placeholder="Tu nombre" />
+                <Field label="Correo" type="email" value={email} onChange={setEmail} placeholder="atleta@ejemplo.com" />
+                <Field label="Contraseña" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
+                <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 mt-2">
+                  {loading ? 'Creando cuenta…' : 'Crear Cuenta'}
+                </button>
+              </form>
+
+              {/* Google divider */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 border-t border-border" />
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider">o continuar con</span>
+                  <div className="flex-1 border-t border-border" />
+                </div>
+                <div className="flex justify-center mt-4">
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    theme="outline"
+                    size="large"
+                    text="signup_with"
+                    width="380px"
+                  />
+                </div>
               </div>
+
               <p className="text-center text-sm text-muted-foreground">
                 ¿Ya tienes cuenta?{' '}
                 <button onClick={() => setMode('login')} className="text-foreground font-semibold hover:text-primary transition-colors">
