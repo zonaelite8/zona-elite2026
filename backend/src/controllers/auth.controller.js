@@ -56,8 +56,8 @@ const register = async (req, res) => {
         <span style="font-size:32px;font-weight:bold;letter-spacing:5px;color:#f5b927;background:#18181b;padding:10px 20px;border-radius:8px;">${verifyToken}</span>
       </div>
       <p>Este código es confidencial. Si no solicitaste esta cuenta, puedes ignorar este correo.</p>
-    `;
-    await sendEmail(email, 'Verifica tu cuenta - Zona Élite', 'Haz clic en el enlace para verificar tu cuenta', emailHtml);
+    // Send verification email in the background
+    sendEmail(email, 'Verifica tu cuenta - Zona Élite', 'Haz clic en el enlace para verificar tu cuenta', emailHtml);
 
     return res.status(210).json({
       message: 'User registered successfully',
