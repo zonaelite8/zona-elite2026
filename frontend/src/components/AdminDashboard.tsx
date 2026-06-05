@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Users, AlertCircle, CheckCircle2, LogOut, X, Trash2, CalendarPlus, Bell, ChevronDown, Calendar, Clock, Menu, ClipboardList, Plus
+  Users, AlertCircle, CheckCircle2, LogOut, X, Trash2, CalendarPlus, Bell, ChevronDown, Calendar, Clock, Menu, ClipboardList, Plus, Crown
 } from 'lucide-react';
 import { format, addDays, subDays, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -110,7 +110,7 @@ const formatTo12Hour = (timeStr: string) => {
   return `${hourFormatted}:${minutes} ${ampm}`;
 };
 
-export function AdminDashboard({ onLogout }: any) {
+export function AdminDashboard({ onLogout, user }: any) {
   const [activeTab, setActiveTab] = useState<'calendario' | 'horarios' | 'usuarios' | 'planes'>('calendario');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
@@ -371,6 +371,12 @@ export function AdminDashboard({ onLogout }: any) {
             </h2>
           </div>
           <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2 bg-primary/20 text-primary px-4 py-2 rounded-full border border-primary/30 mr-2 shadow-[0_0_15px_rgba(245,185,39,0.2)]">
+              <Crown size={18} className="animate-pulse" />
+              <span className="text-sm font-bold tracking-wide uppercase">
+                ¡Bienvenido, Administrador {user?.name ? user.name : ''}!
+              </span>
+            </div>
             <div ref={notifRef} className="relative">
               <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors" onClick={() => setShowNotifications(v => !v)}>
                 <Bell size={20} />

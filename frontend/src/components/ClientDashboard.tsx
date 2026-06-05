@@ -221,8 +221,28 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
 
   const timeBlocks = groupSlotsByTime(slots);
 
-  const getSlotButtonProps = (slot: any | undefined) => {
+  const getSlotButtonProps = (slot: any | undefined, block?: any) => {
     if (!slot) return { label: 'No disp.', style: 'opacity-0 pointer-events-none', clickable: false };
+    
+    // Check if user already booked this exact time block
+    let hasBookingInBlock = false;
+    if (block) {
+      const blockDateStr = new Date(block.date).toISOString().split('T')[0];
+      hasBookingInBlock = reservations.some(res => {
+        const resDateStr = new Date(res.date).toISOString().split('T')[0];
+        return resDateStr === blockDateStr && res.start_time.substring(0,5) === block.start_time.substring(0,5);
+      });
+    }
+
+    if (hasBookingInBlock) {
+      return {
+        label: 'Ya reservaste',
+        style: 'border-primary/50 text-primary bg-primary/10 cursor-not-allowed',
+        clickable: false,
+        icon: <CheckCircle2 size={12} />
+      };
+    }
+
     const isFull = slot.bookings_count >= slot.capacity;
     const isBlockedByAdmin = slot.is_blocked;
     const isBlockedByRule = slot.cross_blocked;
@@ -351,8 +371,8 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                 ) : (
                   <div className="space-y-3">
                     {timeBlocks.map((block) => {
-                      const fuerzaProps = getSlotButtonProps(block.fuerza);
-                      const persProps = getSlotButtonProps(block.personalizado);
+                      const fuerzaProps = getSlotButtonProps(block.fuerza, block);
+                      const persProps = getSlotButtonProps(block.personalizado, block);
 
                       return (
                         <div key={`${block.date}_${block.start_time}`} className="border border-border rounded-xl overflow-hidden">
