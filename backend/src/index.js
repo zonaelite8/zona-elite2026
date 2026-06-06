@@ -26,35 +26,31 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Zona Elite API is running smoothly' });
 });
 
-// Diagnostic: test email from production
-app.get('/api/test-email', async (req, res) => {
+// Diagnostic: check email config (instant, no sending)
+app.get('/api/check-config', (req, res) => {
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
-  
-  // Show config (masked password)
-  const maskedPass = emailPass ? emailPass.substring(0, 4) + '****' : 'NOT SET';
-  
+  res.json({ 
+    emailUser: emailUser || 'NOT SET',
+    emailPassLength: emailPass ? emailPass.length : 0,
+    emailPassPreview: emailPass ? emailPass.substring(0, 4) + '****' : 'NOT SET',
+    nodeEnv: process.env.NODE_ENV || 'not set'
+  });
+});
+
+// Diagnostic: actually send a test email (may take up to 10s)
+app.get('/api/test-email', async (req, res) => {
   try {
     const { sendEmail } = require('./services/email.service');
     const result = await sendEmail(
       'zonaelite8@gmail.com',
       'Test desde Render - Zona Elite',
-      'Si recibes este correo, el sistema funciona correctamente.',
-      '<h2>Prueba Exitosa</h2><p>El servidor de Render puede enviar correos.</p>'
+      'Si recibes este correo, el sistema funciona.',
+      '<h2>Prueba Exitosa</h2><p>Render puede enviar correos.</p>'
     );
-    res.json({ 
-      success: result, 
-      emailUser: emailUser || 'NOT SET',
-      emailPass: maskedPass,
-      message: result ? 'Correo enviado exitosamente' : 'Falló el envío (revisa los logs de Render)'
-    });
+    res.json({ success: result, message: result ? 'Correo enviado' : 'Falló (ver logs Render)' });
   } catch (error) {
-    res.json({ 
-      success: false, 
-      emailUser: emailUser || 'NOT SET',
-      emailPass: maskedPass,
-      error: error.message 
-    });
+    res.json({ success: false, error: error.message });
   }
 });
 
