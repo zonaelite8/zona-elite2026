@@ -38,19 +38,36 @@ app.get('/api/check-config', (req, res) => {
   });
 });
 
-// Diagnostic: actually send a test email (may take up to 10s)
+// Diagnostic: actually send a test email (max 10s)
 app.get('/api/test-email', async (req, res) => {
+  const nodemailer = require('nodemailer');
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASS
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000
+  });
+
   try {
-    const { sendEmail } = require('./services/email.service');
-    const result = await sendEmail(
-      'zonaelite8@gmail.com',
-      'Test desde Render - Zona Elite',
-      'Si recibes este correo, el sistema funciona.',
-      '<h2>Prueba Exitosa</h2><p>Render puede enviar correos.</p>'
-    );
-    res.json({ success: result, message: result ? 'Correo enviado' : 'Falló (ver logs Render)' });
+    const info = await transporter.sendMail({
+      from: `"Zona Elite" <${process.env.EMAIL_USER}>`,
+      to: 'zonaelite8@gmail.com',
+      subject: 'Test desde Render',
+      text: 'Funciona!'
+    });
+    res.json({ success: true, messageId: info.messageId });
   } catch (error) {
-    res.json({ success: false, error: error.message });
+    res.json({ 
+      success: false, 
+      errorCode: error.code,
+      errorMessage: error.message,
+      errorResponse: error.response || null,
+      command: error.command || null
+    });
   }
 });
 
