@@ -1,37 +1,10 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 require('dotenv').config();
 
-// Configurar el transporte dinámicamente según el proveedor
-const isGmail = process.env.EMAIL_USER && process.env.EMAIL_USER.includes('@gmail.com');
-
-const transporter = nodemailer.createTransport(
-  isGmail 
-    ? {
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000
-      }
-    : {
-        host: 'smtp-mail.outlook.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-        socketTimeout: 10000
-      }
-);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 /**
- * Enviar un correo electrónico
+ * Enviar un correo electrónico via Resend API (funciona en Render)
  * @param {string} to - Destinatario
  * @param {string} subject - Asunto del correo
  * @param {string} text - Contenido en texto plano
@@ -39,14 +12,20 @@ const transporter = nodemailer.createTransport(
  */
 const sendEmail = async (to, subject, text, html) => {
   try {
-    const info = await transporter.sendMail({
-      from: `"Zona Elite" <${process.env.EMAIL_USER}>`,
-      to,
+    const { data, error } = await resend.emails.send({
+      from: 'Zona Elite <onboarding@resend.dev>',
+      to: [to],
       subject,
       text,
-      html
+      html: html || text
     });
-    console.log(`Correo enviado a ${to}: ${info.messageId}`);
+
+    if (error) {
+      console.error(`Error al enviar correo a ${to}:`, error);
+      return false;
+    }
+
+    console.log(`Correo enviado a ${to}: ${data.id}`);
     return true;
   } catch (error) {
     console.error(`Error al enviar correo a ${to}:`, error);
