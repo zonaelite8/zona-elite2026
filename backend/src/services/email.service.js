@@ -13,7 +13,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const sendEmail = async (to, subject, text, html) => {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'Zona Elite <info@zonaelite.com>',
+      from: 'Zona Elite <info@zonaelitemarinilla.com>',
       to: [to],
       subject,
       text,
