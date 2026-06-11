@@ -1,5 +1,14 @@
 const db = require('../config/db');
 
+const formatTo12Hour = (timeStr) => {
+  if (!timeStr) return '';
+  const [hours, minutes] = timeStr.split(':');
+  const h = parseInt(hours, 10);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h % 12 || 12;
+  return `${h12}:${minutes} ${ampm}`;
+};
+
 // Create a booking
 const createBooking = async (req, res) => {
   const { slotId } = req.body;
@@ -91,7 +100,7 @@ const createBooking = async (req, res) => {
       const userEmail = user?.email;
       
       const dateStr = slot.date ? new Date(slot.date).toISOString().split('T')[0] : '';
-      const timeStr = slot.start_time ? slot.start_time.substring(0, 5) : '';
+      const timeStr = slot.start_time ? formatTo12Hour(slot.start_time.substring(0, 5)) : '';
       const modalityUpper = slot.modality.charAt(0).toUpperCase() + slot.modality.slice(1);
       
       // Database notification
@@ -245,7 +254,7 @@ const cancelBooking = async (req, res) => {
       if (detailsQuery.rows.length > 0) {
         const { name, modality, date, start_time } = detailsQuery.rows[0];
         const dateStr = date ? new Date(date).toISOString().split('T')[0] : '';
-        const timeStr = start_time ? start_time.substring(0, 5) : '';
+        const timeStr = start_time ? formatTo12Hour(start_time.substring(0, 5)) : '';
         const msg = `El usuario ${name} ha cancelado su reserva de entrenamiento ${modality} para el ${dateStr} a las ${timeStr}.`;
         
         await db.query(
@@ -362,7 +371,7 @@ const cancelBookingByToken = async (req, res) => {
 
     // Format strings for notification
     const dateStr = new Date(booking.date).toISOString().split('T')[0];
-    const timeStr = booking.start_time.substring(0, 5);
+    const timeStr = formatTo12Hour(booking.start_time.substring(0, 5));
 
     // Notify admin
     const adminMsg = `❌ ${booking.user_name} ha CANCELADO su reserva de entrenamiento ${booking.modality} para el ${dateStr} a las ${timeStr}.`;
