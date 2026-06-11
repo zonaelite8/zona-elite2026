@@ -16,10 +16,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: { ...authHeaders(), ...init?.headers },
-  })
-  const data = await res.json()
-  if (!res.ok) throw new Error(data.error ?? 'Error del servidor')
-  return data as T
+  });
+
+  const text = await res.text();
+  let data: any = {};
+  
+  try {
+    if (text) {
+      data = JSON.parse(text);
+    }
+  } catch (err) {
+    console.error('Failed to parse JSON:', text);
+  }
+
+  if (!res.ok) throw new Error(data.error ?? 'Error del servidor');
+  return data as T;
 }
 
 export const api = {
