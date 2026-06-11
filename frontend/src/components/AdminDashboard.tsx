@@ -488,7 +488,7 @@ export function AdminDashboard({ onLogout, user }: any) {
                             <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-border">
                               {/* Fuerza List */}
                               <div>
-                                <h4 className="text-xs font-bold uppercase text-primary mb-3">🏋️ Fuerza</h4>
+                                <h4 className="text-xs font-bold uppercase text-primary mb-3">🏋️ Entre. Fuerza</h4>
                                 {!hasFuerza ? <p className="text-xs text-muted-foreground italic">No disponible</p> : block.fuerza.bookings.length === 0 ? <p className="text-xs text-muted-foreground italic">Nadie ha reservado</p> : (
                                   <ul className="space-y-2">
                                     {block.fuerza.bookings.map((b: any) => (
@@ -502,7 +502,7 @@ export function AdminDashboard({ onLogout, user }: any) {
                               </div>
                               {/* Personalizado List */}
                               <div>
-                                <h4 className="text-xs font-bold uppercase text-emerald-400 mb-3">🎯 Personalizado</h4>
+                                <h4 className="text-xs font-bold uppercase text-emerald-400 mb-3">🎯 Entre. Pers.</h4>
                                 {!hasPers ? <p className="text-xs text-muted-foreground italic">No disponible</p> : block.personalizado.bookings.length === 0 ? <p className="text-xs text-muted-foreground italic">Nadie ha reservado</p> : (
                                   <ul className="space-y-2">
                                     {block.personalizado.bookings.map((b: any) => (

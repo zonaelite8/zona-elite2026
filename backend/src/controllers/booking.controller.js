@@ -62,6 +62,18 @@ const createBooking = async (req, res) => {
       return res.status(400).json({ error: 'You have already booked this session' });
     }
 
+    // 4.5. Check if user already booked ANOTHER slot at the exact same time
+    const concurrentBookingCheck = await db.query(
+      `SELECT b.* FROM bookings b
+       JOIN slots s ON b.slot_id = s.id
+       WHERE b.user_id = $1 AND s.date = $2 AND s.start_time = $3`,
+      [userId, slot.date, slot.start_time]
+    );
+
+    if (concurrentBookingCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'Ya tienes una reserva en este mismo horario. No puedes reservar fuerza y personalizado a la vez.' });
+    }
+
     // 4. Create the booking with a unique cancel token
     const crypto = require('crypto');
     const cancelToken = crypto.randomUUID();
@@ -122,8 +134,11 @@ const createBooking = async (req, res) => {
             </div>
           </div>
         `;
-        // We don't await so it doesn't block the response
-        emailService.sendEmail(userEmail, clientSubject, '', clientHtml);
+        try {
+          emailService.sendEmail(userEmail, clientSubject, '', clientHtml);
+        } catch (emailErr) {
+          console.error('Failed to send booking confirmation email to client:', emailErr);
+        }
       }
 
       // Send email to admin
@@ -158,7 +173,11 @@ const createBooking = async (req, res) => {
             </div>
           </div>
       `;
-      emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
+      try {
+        emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
+      } catch (emailErr) {
+        console.error('Failed to send booking admin email:', emailErr);
+      }
 
     } catch (notifErr) {
       console.error('Error creating booking notification:', notifErr);
@@ -256,7 +275,11 @@ const cancelBooking = async (req, res) => {
             </div>
           </div>
         `;
-        emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
+        try {
+          emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
+        } catch (emailErr) {
+          console.error('Failed to send admin cancellation email:', emailErr);
+        }
       }
     }
 
@@ -370,7 +393,12 @@ const cancelBookingByToken = async (req, res) => {
         </div>
       </div>
     `;
-    emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
+    
+    try {
+      emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
+    } catch (emailErr) {
+      console.error('Failed to send cancellation email:', emailErr);
+    }
 
     res.json({ message: 'Booking cancelled successfully' });
   } catch (error) {
