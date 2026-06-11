@@ -298,6 +298,16 @@ export function AdminDashboard({ onLogout, user }: any) {
     });
   };
 
+  const handleDeleteNotifications = async () => {
+    try {
+      await notificationsApi.deleteAll();
+      setNotifications([]);
+      showToast('Notificaciones borradas');
+    } catch (error: any) {
+      showToast(error.message || 'Error al borrar notificaciones', 'error');
+    }
+  };
+
 
   const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -405,7 +415,12 @@ export function AdminDashboard({ onLogout, user }: any) {
                 <div className="absolute top-12 right-0 w-80 bg-card border border-border shadow-2xl rounded-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="p-3 bg-secondary/50 border-b border-border text-sm font-bold uppercase tracking-wider flex justify-between items-center">
                     Notificaciones
-                    <button onClick={() => setShowNotifications(false)}><X size={16} /></button>
+                    <div className="flex items-center gap-3">
+                      {notifications.length > 0 && (
+                        <button onClick={handleDeleteNotifications} className="text-red-500 hover:underline text-xs normal-case">Borrar todas</button>
+                      )}
+                      <button onClick={() => setShowNotifications(false)} className="hover:bg-secondary rounded p-1"><X size={16} /></button>
+                    </div>
                   </div>
                   <div className="max-h-64 overflow-y-auto">
                     {notifications.length === 0 ? <p className="p-4 text-sm text-muted-foreground text-center">No hay notificaciones.</p> : (

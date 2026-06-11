@@ -23,7 +23,18 @@ const markAsRead = async (req, res) => {
   }
 };
 
+const deleteAllNotifications = async (req, res) => {
+  try {
+    await db.query('DELETE FROM notifications');
+    return res.json({ message: 'All notifications deleted' });
+  } catch (error) {
+    console.error('Error deleting notifications:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 module.exports = {
   getNotifications,
-  markAsRead
+  markAsRead,
+  deleteAllNotifications
 };

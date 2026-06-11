@@ -14,4 +14,7 @@ export const notificationsApi = {
 
   markAsRead: (id: number) =>
     api.put<{ message: string }>(`/admin/notifications/${id}/read`),
+
+  deleteAll: () =>
+    api.delete<{ message: string }>('/admin/notifications'),
 }
