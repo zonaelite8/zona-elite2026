@@ -83,7 +83,7 @@ const createBooking = async (req, res) => {
       const modalityUpper = slot.modality.charAt(0).toUpperCase() + slot.modality.slice(1);
       
       // Database notification
-      const msg = `📅 ${userName} reservó ${slot.modality} para el ${dateStr} a las ${timeStr}.`;
+      const msg = `📅 ${userName} reservó entrenamiento ${slot.modality} para el ${dateStr} a las ${timeStr}.`;
       await db.query(
         'INSERT INTO notifications (message, type) VALUES ($1, $2)',
         [msg, 'new_booking']
@@ -227,7 +227,7 @@ const cancelBooking = async (req, res) => {
         const { name, modality, date, start_time } = detailsQuery.rows[0];
         const dateStr = date ? new Date(date).toISOString().split('T')[0] : '';
         const timeStr = start_time ? start_time.substring(0, 5) : '';
-        const msg = `El usuario ${name} ha cancelado su reserva de ${modality} para el ${dateStr} a las ${timeStr}.`;
+        const msg = `El usuario ${name} ha cancelado su reserva de entrenamiento ${modality} para el ${dateStr} a las ${timeStr}.`;
         
         await db.query(
           'INSERT INTO notifications (message, type) VALUES ($1, $2)',
@@ -342,7 +342,7 @@ const cancelBookingByToken = async (req, res) => {
     const timeStr = booking.start_time.substring(0, 5);
 
     // Notify admin
-    const adminMsg = `❌ ${booking.user_name} ha CANCELADO su reserva de ${booking.modality} para el ${dateStr} a las ${timeStr}.`;
+    const adminMsg = `❌ ${booking.user_name} ha CANCELADO su reserva de entrenamiento ${booking.modality} para el ${dateStr} a las ${timeStr}.`;
     await db.query(
       'INSERT INTO notifications (message, type) VALUES ($1, $2)',
       [adminMsg, 'cancel_booking']
