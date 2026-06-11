@@ -56,10 +56,10 @@ const getModalityLabel = (block: any) => {
   const showFuerza = hasFuerza && !fuerzaBlockedByRule;
   const showPers = hasPers && !persBlockedByRule;
 
-  if (showFuerza && showPers) return <span className="bg-purple-500/20 text-purple-400 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-purple-500/30">AMBAS</span>;
-  if (showFuerza) return <span className="bg-primary/20 text-primary px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-primary/30">FUERZA</span>;
-  if (showPers) return <span className="bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-emerald-500/30">PERSONALIZADO</span>;
-  return <span className="bg-red-500/20 text-red-400 px-2.5 py-1 rounded-md text-xs font-bold uppercase tracking-wider border border-red-500/30">BLOQUEADO</span>;
+  if (showFuerza && showPers) return <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-purple-500/30">AMBAS</span>;
+  if (showFuerza) return <span className="bg-primary/20 text-primary px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-primary/30">ENTRENAMIENTO DE FUERZA</span>;
+  if (showPers) return <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-emerald-500/30">ENTRENAMIENTO PERSONALIZADO</span>;
+  return <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-red-500/30">BLOQUEADO</span>;
 };
 
 const playSuccessSound = () => {

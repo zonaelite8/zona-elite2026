@@ -388,11 +388,11 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
 
                             {/* FUERZA */}
                             <div className={`p-4 bg-card flex flex-col gap-2 ${!fuerzaProps.clickable ? '' : ''}`}>
-                              <div className="flex items-center gap-2 mb-1">
-                                <Dumbbell size={14} className="text-primary" />
-                                <span className="text-xs font-bold uppercase tracking-wider text-primary">Entre. Fuerza</span>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <Dumbbell size={12} className="text-primary shrink-0" />
+                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tight text-primary leading-tight">Entrenamiento de Fuerza</span>
                                 {block.fuerza && (
-                                  <span className="ml-auto text-xs text-muted-foreground">
+                                  <span className="ml-auto text-[10px] text-muted-foreground">
                                     {block.fuerza.bookings_count}/{block.fuerza.capacity}
                                   </span>
                                 )}
@@ -400,7 +400,7 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                               {block.fuerza ? (
                                 <button
                                   disabled={!fuerzaProps.clickable}
-                                  onClick={() => fuerzaProps.clickable && setBookingModal({ slot: block.fuerza, label: 'Entrenamiento Fuerza' })}
+                                  onClick={() => fuerzaProps.clickable && setBookingModal({ slot: block.fuerza, label: 'Entrenamiento de Fuerza' })}
                                   className={`w-full py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${fuerzaProps.style}`}
                                 >
                                   {fuerzaProps.icon}
@@ -413,11 +413,11 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
 
                             {/* PERSONALIZADO */}
                             <div className="p-4 bg-card flex flex-col gap-2">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Activity size={14} className="text-emerald-400" />
-                                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Entre. Pers.</span>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <Activity size={12} className="text-emerald-400 shrink-0" />
+                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tight text-emerald-400 leading-tight">Entrenamiento Personalizado</span>
                                 {block.personalizado && (
-                                  <span className="ml-auto text-xs text-muted-foreground">
+                                  <span className="ml-auto text-[10px] text-muted-foreground">
                                     {block.personalizado.bookings_count}/{block.personalizado.capacity}
                                   </span>
                                 )}
