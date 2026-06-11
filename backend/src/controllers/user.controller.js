@@ -55,3 +55,27 @@ exports.updateUserClasses = async (req, res) => {
     res.status(500).json({ error: 'Failed to update user classes' });
   }
 };
+
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Prevent deleting the main admin
+    const adminCheck = await db.query('SELECT email FROM users WHERE id = $1', [id]);
+    if (adminCheck.rows.length > 0 && adminCheck.rows[0].email === 'zonaelite8@gmail.com') {
+      return res.status(403).json({ error: 'No se puede eliminar al administrador principal' });
+    }
+
+    const result = await db.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({ message: 'Usuario eliminado exitosamente' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: 'Error al eliminar el usuario' });
+  }
+};
+

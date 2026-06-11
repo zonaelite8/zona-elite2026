@@ -16,5 +16,6 @@ export const usersApi = {
   getAll: () => api.get<User[]>('/users'),
   updateClasses: (id: string, data: { available_classes?: number, plan_type?: string }) => 
     api.put<{ message: string; user: User }>(`/users/${id}/classes`, data)
-      .then(res => res.user)
+      .then(res => res.user),
+  delete: (id: string) => api.delete<{ message: string }>(`/users/${id}`)
 };

@@ -12,4 +12,7 @@ router.get('/', userController.getAllUsers);
 // Update user available classes
 router.put('/:id/classes', userController.updateUserClasses);
 
+// Delete a user
+router.delete('/:id', userController.deleteUser);
+
 module.exports = router;

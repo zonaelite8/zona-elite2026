@@ -280,6 +280,25 @@ export function AdminDashboard({ onLogout, user }: any) {
     }
   };
 
+  const handleDeleteUser = (id: string) => {
+    setConfirmModal({
+      title: '¿Eliminar Usuario?',
+      message: '¿Estás seguro de que deseas eliminar a este usuario permanentemente? Se borrarán también todas sus reservas y evaluaciones asociadas.',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          await usersApi.delete(id);
+          playCancelSound();
+          showToast('¡Usuario eliminado con éxito!');
+          await fetchUsers();
+        } catch (error: any) {
+          showToast(error.message || 'Error al eliminar usuario', 'error');
+        }
+      }
+    });
+  };
+
+
   const handleCreatePlan = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
@@ -583,17 +602,18 @@ export function AdminDashboard({ onLogout, user }: any) {
                 <table className="w-full text-left border-collapse table-fixed text-[9px] sm:text-[10px] lg:text-sm">
                   <thead>
                     <tr className="border-b border-border text-[8px] sm:text-[9px] lg:text-xs uppercase tracking-wider text-muted-foreground font-semibold bg-secondary/30">
-                      <th className="px-1 py-2 lg:p-4 w-[16%] truncate" title="Nombre">Nombre</th>
-                      <th className="px-1 py-2 lg:p-4 w-[18%] truncate" title="Email">Email</th>
-                      <th className="px-1 py-2 lg:p-4 w-[14%] truncate" title="Teléfono">Teléfono</th>
+                      <th className="px-1 py-2 lg:p-4 w-[14%] truncate" title="Nombre">Nombre</th>
+                      <th className="px-1 py-2 lg:p-4 w-[16%] truncate" title="Email">Email</th>
+                      <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Teléfono">Teléfono</th>
                       <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Cédula">Cédula</th>
                       <th className="px-1 py-2 lg:p-4 w-[15%] truncate" title="Plan">Plan</th>
-                      <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Clases Disp.">Clases</th>
-                      <th className="px-1 py-2 lg:p-4 w-[13%] truncate" title="Registrado">Registro</th>
+                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Clases Disp.">Clases</th>
+                      <th className="px-1 py-2 lg:p-4 w-[11%] truncate" title="Registrado">Registro</th>
+                      <th className="px-1 py-2 lg:p-4 w-[10%] text-center" title="Acciones">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {usersList.length === 0 && <tr><td colSpan={7} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
+                    {usersList.length === 0 && <tr><td colSpan={8} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
                     {usersList.map((u: User) => (
                       <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
                         <td className="px-1 py-2 lg:p-4 font-bold truncate" title={u.name}>{u.name}</td>
@@ -628,6 +648,17 @@ export function AdminDashboard({ onLogout, user }: any) {
                           />
                         </td>
                         <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={format(new Date(u.created_at), 'dd/MM/yyyy')}>{format(new Date(u.created_at), 'dd/MM/yyyy')}</td>
+                        <td className="px-1 py-2 lg:p-4 text-center">
+                          {u.email !== 'zonaelite8@gmail.com' && (
+                            <button 
+                              onClick={() => handleDeleteUser(u.id)} 
+                              className="text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white p-1.5 lg:p-2 rounded-lg transition-all" 
+                              title="Eliminar Usuario"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
