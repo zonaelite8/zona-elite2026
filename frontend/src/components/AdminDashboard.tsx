@@ -403,7 +403,7 @@ export function AdminDashboard({ onLogout, user }: any) {
             <div className="hidden sm:flex items-center gap-2 bg-primary/20 text-primary px-4 py-2 rounded-full border border-primary/30 mr-2 shadow-[0_0_15px_rgba(245,185,39,0.2)]">
               <Crown size={18} className="animate-pulse" />
               <span className="text-sm font-bold tracking-wide uppercase">
-                ¡Bienvenido, Administrador {user?.name ? user.name : ''}!
+                ¡Bienvenido, Santiago Alzate!
               </span>
             </div>
             <div ref={notifRef} className="relative">
