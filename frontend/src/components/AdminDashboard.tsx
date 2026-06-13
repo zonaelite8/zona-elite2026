@@ -142,7 +142,7 @@ export function AdminDashboard({ onLogout }: any) {
   const [userSelectData, setUserSelectData] = useState<{ slotId: number; modality: string } | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
-  const [newUserData, setNewUserData] = useState({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo' });
+  const [newUserData, setNewUserData] = useState({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo', payment_amount: 0, payment_date: '', expiration_date: '', payment_status: 'pendiente' });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void; } | null>(null);
 
@@ -365,7 +365,7 @@ export function AdminDashboard({ onLogout }: any) {
       showToast('¡Usuario creado con éxito!');
       playSuccessSound();
       setShowGlobalCreateUserModal(false);
-      setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo' });
+      setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo', payment_amount: 0, payment_date: '', expiration_date: '', payment_status: 'pendiente' });
       await fetchUsers();
     } catch (error: any) {
       showToast(error.response?.data?.error || error.message || 'Error al crear usuario', 'error');
@@ -374,7 +374,7 @@ export function AdminDashboard({ onLogout }: any) {
     }
   };
 
-  const handleUpdateUserAdmin = async (id: string, data: { available_classes?: number, plan_type?: string, payment_method?: string }) => {
+  const handleUpdateUserAdmin = async (id: string, data: { available_classes?: number, plan_type?: string, payment_method?: string, payment_amount?: number, payment_date?: string, expiration_date?: string, payment_status?: string }) => {
     try {
       // Si cambian el plan, podríamos actualizar las clases por defecto opcionalmente
       // pero para mantenerlo simple y seguro, si el usuario elige un plan,
@@ -804,7 +804,7 @@ export function AdminDashboard({ onLogout }: any) {
                 <h3 className="text-xl font-heading font-bold uppercase">Usuarios ({usersList.length})</h3>
                 <button 
                   onClick={() => {
-                    setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo' });
+                    setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo', payment_amount: 0, payment_date: '', expiration_date: '', payment_status: 'pendiente' });
                     setShowGlobalCreateUserModal(true);
                   }} 
                   className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
@@ -812,64 +812,44 @@ export function AdminDashboard({ onLogout }: any) {
                   <Plus size={18} /> Añadir Cliente
                 </button>
               </div>
-              <div className="bg-card border border-border rounded-2xl overflow-hidden w-full">
-                <table className="w-full text-left border-collapse table-fixed text-[9px] sm:text-[10px] lg:text-sm">
+              <div className="bg-card border border-border rounded-2xl overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse table-auto min-w-[900px] text-[10px] sm:text-xs">
                   <thead>
-                    <tr className="border-b border-border text-[8px] sm:text-[9px] lg:text-xs uppercase tracking-wider text-muted-foreground font-semibold bg-secondary/30">
-                      <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Nombre">Nombre</th>
-                      <th className="px-1 py-2 lg:p-4 w-[14%] truncate" title="Email">Email</th>
-                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Teléfono">Teléfono</th>
-                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Cédula">Cédula</th>
-                      <th className="px-1 py-2 lg:p-4 w-[14%] truncate" title="Plan">Plan</th>
-                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Pago">Pago</th>
-                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Clases Disp.">Clases</th>
-                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Registrado">Registro</th>
-                      <th className="px-1 py-2 lg:p-4 w-[10%] text-center" title="Acciones">Acciones</th>
+                    <tr className="border-b border-border text-[9px] sm:text-[10px] uppercase tracking-wider text-muted-foreground font-semibold bg-secondary/30">
+                      <th className="px-2 py-3 w-[12%]" title="Nombre">Nombre</th>
+                      <th className="px-2 py-3 w-[10%]" title="Teléfono">Teléfono</th>
+                      <th className="px-2 py-3 w-[14%]" title="Plan">Plan</th>
+                      <th className="px-2 py-3 w-[7%]" title="Clases">Clases</th>
+                      <th className="px-2 py-3 w-[10%]" title="Método">Pago</th>
+                      <th className="px-2 py-3 w-[9%]" title="Valor">Valor</th>
+                      <th className="px-2 py-3 w-[10%]" title="F. Pago">F. Pago</th>
+                      <th className="px-2 py-3 w-[10%]" title="Vence">Vence</th>
+                      <th className="px-2 py-3 w-[10%]" title="Estado">Estado</th>
+                      <th className="px-2 py-3 w-[8%] text-center" title="Acciones">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {usersList.length === 0 && <tr><td colSpan={9} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
+                    {usersList.length === 0 && <tr><td colSpan={10} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
                     {usersList.map((u: User) => (
                       <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
-                        <td className="px-1 py-2 lg:p-4 font-bold truncate" title={u.name}>{u.name}</td>
-                        <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={u.email}>{u.email}</td>
-                        <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={u.phone || '-'}>{u.phone || '-'}</td>
-                        <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={u.cedula || '-'}>{u.cedula || '-'}</td>
-                        <td className="px-1 py-2 lg:p-4 truncate">
+                        <td className="px-2 py-2 font-bold truncate" title={u.name}>{u.name}</td>
+                        <td className="px-2 py-2 text-muted-foreground truncate" title={u.phone || '-'}>{u.phone || '-'}</td>
+                        <td className="px-2 py-2">
                           <select 
-                            className="bg-background border border-border rounded px-0.5 py-0.5 text-[8px] sm:text-[9px] lg:text-sm text-foreground font-semibold focus:outline-none focus:border-primary w-full max-w-[120px] truncate"
+                            className="bg-background border border-border rounded px-1 py-1 text-[10px] sm:text-xs text-foreground font-semibold focus:outline-none focus:border-primary w-full max-w-[130px] truncate"
                             value={u.plan_type || 'Sin Plan'}
                             onChange={(e) => {
-                              if (e.target.value !== u.plan_type) {
-                                handleUpdateUserAdmin(u.id, { plan_type: e.target.value });
-                              }
+                              if (e.target.value !== u.plan_type) handleUpdateUserAdmin(u.id, { plan_type: e.target.value });
                             }}
                           >
                             {!plansList.find(p => p.name === (u.plan_type || 'Sin Plan')) && <option value={u.plan_type || 'Sin Plan'}>{u.plan_type || 'Sin Plan'}</option>}
-                            {plansList.map(p => (
-                              <option key={p.id} value={p.name}>{p.name}</option>
-                            ))}
+                            {plansList.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
                           </select>
                         </td>
-                        <td className="px-1 py-2 lg:p-4 truncate">
-                          <select 
-                            className="bg-background border border-border rounded px-0.5 py-0.5 text-[8px] sm:text-[9px] lg:text-sm text-foreground font-semibold focus:outline-none focus:border-primary w-full max-w-[90px] truncate"
-                            value={u.payment_method || 'efectivo'}
-                            onChange={(e) => {
-                              if (e.target.value !== u.payment_method) {
-                                handleUpdateUserAdmin(u.id, { payment_method: e.target.value });
-                              }
-                            }}
-                          >
-                            <option value="efectivo">Efectivo</option>
-                            <option value="qr">QR</option>
-                            <option value="transferencia">Transf.</option>
-                          </select>
-                        </td>
-                        <td className="px-1 py-2 lg:p-4">
+                        <td className="px-2 py-2">
                           <input 
                             type="number" 
-                            className="w-full max-w-[40px] lg:max-w-[64px] bg-background border border-border rounded px-0.5 py-0.5 text-center font-bold text-[8px] sm:text-[9px] lg:text-sm"
+                            className="w-full max-w-[50px] bg-background border border-border rounded px-1 py-1 text-center font-bold text-[10px] sm:text-xs"
                             defaultValue={u.available_classes || 0}
                             onBlur={(e) => {
                               const val = parseInt(e.target.value);
@@ -877,12 +857,70 @@ export function AdminDashboard({ onLogout }: any) {
                             }}
                           />
                         </td>
-                        <td className="px-1 py-2 lg:p-4 text-muted-foreground truncate" title={format(new Date(u.created_at), 'dd/MM/yyyy')}>{format(new Date(u.created_at), 'dd/MM/yyyy')}</td>
-                        <td className="px-1 py-2 lg:p-4 text-center">
+                        <td className="px-2 py-2">
+                          <select 
+                            className="bg-background border border-border rounded px-1 py-1 text-[10px] sm:text-xs text-foreground font-semibold focus:outline-none focus:border-primary w-full max-w-[90px] truncate"
+                            value={u.payment_method || 'efectivo'}
+                            onChange={(e) => {
+                              if (e.target.value !== u.payment_method) handleUpdateUserAdmin(u.id, { payment_method: e.target.value });
+                            }}
+                          >
+                            <option value="efectivo">Efectivo</option>
+                            <option value="qr">QR</option>
+                            <option value="transferencia">Transf.</option>
+                          </select>
+                        </td>
+                        <td className="px-2 py-2">
+                          <input 
+                            type="number" 
+                            className="w-full max-w-[80px] bg-background border border-border rounded px-1 py-1 text-center font-bold text-[10px] sm:text-xs"
+                            defaultValue={u.payment_amount || 0}
+                            onBlur={(e) => {
+                              const val = parseFloat(e.target.value);
+                              if (!isNaN(val) && val !== (u.payment_amount || 0)) handleUpdateUserAdmin(u.id, { payment_amount: val });
+                            }}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input 
+                            type="date" 
+                            className="w-full bg-background border border-border rounded px-1 py-1 text-[10px] sm:text-xs text-muted-foreground"
+                            defaultValue={u.payment_date ? u.payment_date.split('T')[0] : ''}
+                            onBlur={(e) => {
+                              const currentVal = u.payment_date ? u.payment_date.split('T')[0] : '';
+                              if (e.target.value !== currentVal) handleUpdateUserAdmin(u.id, { payment_date: e.target.value });
+                            }}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <input 
+                            type="date" 
+                            className="w-full bg-background border border-border rounded px-1 py-1 text-[10px] sm:text-xs text-muted-foreground"
+                            defaultValue={u.expiration_date ? u.expiration_date.split('T')[0] : ''}
+                            onBlur={(e) => {
+                              const currentVal = u.expiration_date ? u.expiration_date.split('T')[0] : '';
+                              if (e.target.value !== currentVal) handleUpdateUserAdmin(u.id, { expiration_date: e.target.value });
+                            }}
+                          />
+                        </td>
+                        <td className="px-2 py-2">
+                          <select 
+                            className={`bg-background border border-border rounded px-1 py-1 text-[10px] sm:text-xs font-semibold focus:outline-none focus:border-primary w-full max-w-[90px] truncate ${u.payment_status === 'al_dia' ? 'text-emerald-500' : u.payment_status === 'vencido' ? 'text-red-500' : 'text-amber-500'}`}
+                            value={u.payment_status || 'pendiente'}
+                            onChange={(e) => {
+                              if (e.target.value !== u.payment_status) handleUpdateUserAdmin(u.id, { payment_status: e.target.value });
+                            }}
+                          >
+                            <option value="pendiente">Pendiente</option>
+                            <option value="al_dia">Al día</option>
+                            <option value="vencido">Vencido</option>
+                          </select>
+                        </td>
+                        <td className="px-2 py-2 text-center">
                           {u.email !== 'zonaelite8@gmail.com' && (
                             <button 
                               onClick={() => handleDeleteUser(u.id)} 
-                              className="text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white p-1.5 lg:p-2 rounded-lg transition-all" 
+                              className="text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white p-1.5 rounded-lg transition-all mx-auto flex" 
                               title="Eliminar Usuario"
                             >
                               <Trash2 size={16} />
@@ -1012,6 +1050,34 @@ export function AdminDashboard({ onLogout }: any) {
                       </select>
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Valor</label>
+                      <input type="number" value={newUserData.payment_amount} onChange={e => setNewUserData({...newUserData, payment_amount: parseFloat(e.target.value) || 0})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="0" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Estado de Pago</label>
+                      <select 
+                        value={newUserData.payment_status} 
+                        onChange={e => setNewUserData({...newUserData, payment_status: e.target.value})} 
+                        className="w-full bg-background border border-border rounded-xl px-2 py-2.5 text-xs focus:outline-none focus:border-primary"
+                      >
+                        <option value="pendiente">Pendiente</option>
+                        <option value="al_dia">Al día</option>
+                        <option value="vencido">Vencido</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">F. Pago (Opc.)</label>
+                      <input type="date" value={newUserData.payment_date} onChange={e => setNewUserData({...newUserData, payment_date: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary text-muted-foreground" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Vence (Opc.)</label>
+                      <input type="date" value={newUserData.expiration_date} onChange={e => setNewUserData({...newUserData, expiration_date: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary text-muted-foreground" />
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -1075,6 +1141,34 @@ export function AdminDashboard({ onLogout }: any) {
                       <option value="qr">QR</option>
                       <option value="transferencia">Transferencia</option>
                     </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Valor</label>
+                    <input type="number" value={newUserData.payment_amount} onChange={e => setNewUserData({...newUserData, payment_amount: parseFloat(e.target.value) || 0})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="0" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Estado de Pago</label>
+                    <select 
+                      value={newUserData.payment_status} 
+                      onChange={e => setNewUserData({...newUserData, payment_status: e.target.value})} 
+                      className="w-full bg-background border border-border rounded-xl px-2 py-2.5 text-xs focus:outline-none focus:border-primary"
+                    >
+                      <option value="pendiente">Pendiente</option>
+                      <option value="al_dia">Al día</option>
+                      <option value="vencido">Vencido</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">F. Pago (Opc.)</label>
+                    <input type="date" value={newUserData.payment_date} onChange={e => setNewUserData({...newUserData, payment_date: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary text-muted-foreground" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Vence (Opc.)</label>
+                    <input type="date" value={newUserData.expiration_date} onChange={e => setNewUserData({...newUserData, expiration_date: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary text-muted-foreground" />
                   </div>
                 </div>
               </div>

@@ -3,7 +3,7 @@ const db = require('../config/db');
 exports.getAllUsers = async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT id, name, email, role, phone, cedula, available_classes, plan_type, payment_method, created_at
+      SELECT id, name, email, role, phone, cedula, available_classes, plan_type, payment_method, payment_amount, payment_date, expiration_date, payment_status, created_at
       FROM users
       ORDER BY created_at DESC
     `);
@@ -15,7 +15,7 @@ exports.getAllUsers = async (req, res) => {
 };
 
 exports.createUser = async (req, res) => {
-  let { name, email, phone, cedula, plan_type, payment_method } = req.body;
+  let { name, email, phone, cedula, plan_type, payment_method, payment_amount, payment_date, expiration_date, payment_status } = req.body;
   if (!name) {
     return res.status(400).json({ error: 'Name is required' });
   }
@@ -28,8 +28,8 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe un usuario con este correo' });
     }
     const result = await db.query(
-      'INSERT INTO users (name, email, phone, cedula, role, is_verified, plan_type, payment_method) VALUES ($1, $2, $3, $4, $5, true, $6, $7) RETURNING *',
-      [name, email, phone, cedula, 'client', plan_type || null, payment_method || 'efectivo']
+      'INSERT INTO users (name, email, phone, cedula, role, is_verified, plan_type, payment_method, payment_amount, payment_date, expiration_date, payment_status) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8, $9, $10, $11) RETURNING *',
+      [name, email, phone, cedula, 'client', plan_type || null, payment_method || 'efectivo', payment_amount || 0, payment_date || null, expiration_date || null, payment_status || 'pendiente']
     );
     res.status(201).json({ message: 'Usuario creado exitosamente', user: result.rows[0] });
   } catch (error) {
@@ -41,37 +41,28 @@ exports.createUser = async (req, res) => {
 exports.updateUserClasses = async (req, res) => {
   try {
     const { id } = req.params;
-    const { available_classes, plan_type, payment_method } = req.body;
+    const { available_classes, plan_type, payment_method, payment_amount, payment_date, expiration_date, payment_status } = req.body;
 
-    if (available_classes === undefined && plan_type === undefined && payment_method === undefined) {
-      return res.status(400).json({ error: 'At least one field (available_classes, plan_type, payment_method) is required' });
+    if (available_classes === undefined && plan_type === undefined && payment_method === undefined && payment_amount === undefined && payment_date === undefined && expiration_date === undefined && payment_status === undefined) {
+      return res.status(400).json({ error: 'At least one field is required' });
     }
 
     let query = 'UPDATE users SET ';
     let values = [];
     let counter = 1;
 
-    if (available_classes !== undefined) {
-      query += `available_classes = $${counter} `;
-      values.push(available_classes);
-      counter++;
+    const fields = { available_classes, plan_type, payment_method, payment_amount, payment_date, expiration_date, payment_status };
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) {
+        if (counter > 1) query += ', ';
+        query += `${key} = $${counter} `;
+        // Si el valor es una cadena vacía en fechas, lo convertimos a null para la BD
+        values.push(value === '' && (key === 'payment_date' || key === 'expiration_date') ? null : value);
+        counter++;
+      }
     }
 
-    if (plan_type !== undefined) {
-      if (counter > 1) query += ', ';
-      query += `plan_type = $${counter} `;
-      values.push(plan_type);
-      counter++;
-    }
-
-    if (payment_method !== undefined) {
-      if (counter > 1) query += ', ';
-      query += `payment_method = $${counter} `;
-      values.push(payment_method);
-      counter++;
-    }
-
-    query += `WHERE id = $${counter} RETURNING id, name, email, available_classes, plan_type, payment_method`;
+    query += `WHERE id = $${counter} RETURNING id, name, email, available_classes, plan_type, payment_method, payment_amount, payment_date, expiration_date, payment_status`;
     values.push(id);
 
     const result = await db.query(query, values);

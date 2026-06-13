@@ -44,6 +44,10 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cedula VARCHAR(50)');
     await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_type VARCHAR(100) DEFAULT \'Sin Plan\'');
     await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20) DEFAULT \'efectivo\'');
+    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_amount DECIMAL(10, 2) DEFAULT 0');
+    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_date DATE');
+    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS expiration_date DATE');
+    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT \'pendiente\'');
     await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE');
     await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token VARCHAR(255)');
     console.log("Tabla 'users' verificada.");
