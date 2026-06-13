@@ -191,7 +191,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                     {dbPlans.length === 0 && <option value="Cargando planes...">Cargando planes...</option>}
                     {dbPlans.map(plan => (
                       <option key={plan.id} value={plan.name}>
-                        {plan.name} {plan.price && parseFloat(plan.price) > 0 ? `- $${parseFloat(plan.price).toLocaleString()}` : ''}
+                        {plan.name} {plan.price && parseFloat(plan.price) > 0 ? `- $${parseFloat(plan.price).toLocaleString('es-CO')}` : ''}
                       </option>
                     ))}
                   </select>

@@ -961,7 +961,7 @@ export function AdminDashboard({ onLogout }: any) {
                       <tr key={p.id} className="hover:bg-secondary/20 transition-colors">
                         <td className="px-4 py-4 font-bold">{p.name}</td>
                         <td className="px-4 py-4 text-muted-foreground">{p.default_classes === 0 ? 'Ilimitado' : p.default_classes}</td>
-                        <td className="px-4 py-4 text-emerald-500 font-bold">${parseFloat(p.price || '0').toLocaleString()}</td>
+                        <td className="px-4 py-4 text-emerald-500 font-bold">${parseFloat(p.price || '0').toLocaleString('es-CO')}</td>
                         <td className="px-4 py-4 text-center">
                           <button onClick={() => handleDeletePlan(p.id)} className="text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white p-2 rounded-lg transition-all" title="Eliminar Plan">
                             <Trash2 size={18} />
@@ -1350,12 +1350,14 @@ export function AdminDashboard({ onLogout }: any) {
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Precio ($)</label>
                 <input 
-                  type="number" 
-                  min="0"
+                  type="text" 
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-primary"
-                  value={newPlan.price}
-                  onChange={e => setNewPlan(s => ({ ...s, price: parseFloat(e.target.value) || 0 }))}
-                  placeholder="Ej: 170000"
+                  value={newPlan.price === 0 ? '' : newPlan.price.toLocaleString('es-CO')}
+                  onChange={e => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    setNewPlan(s => ({ ...s, price: parseInt(val) || 0 }));
+                  }}
+                  placeholder="Ej: 170.000"
                 />
               </div>
               <button type="submit" disabled={isCreating} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2">
