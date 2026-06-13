@@ -3,7 +3,7 @@ const db = require('../config/db');
 exports.getAllUsers = async (req, res) => {
   try {
     const result = await db.query(`
-      SELECT id, name, email, role, phone, cedula, available_classes, plan_type, created_at
+      SELECT id, name, email, role, phone, cedula, available_classes, plan_type, payment_method, created_at
       FROM users
       ORDER BY created_at DESC
     `);
@@ -15,7 +15,7 @@ exports.getAllUsers = async (req, res) => {
 };
 
 exports.createUser = async (req, res) => {
-  const { name, email, phone, cedula } = req.body;
+  const { name, email, phone, cedula, plan_type, payment_method } = req.body;
   if (!name || !email) {
     return res.status(400).json({ error: 'Name and email are required' });
   }
@@ -25,8 +25,8 @@ exports.createUser = async (req, res) => {
       return res.status(400).json({ error: 'Ya existe un usuario con este correo' });
     }
     const result = await db.query(
-      'INSERT INTO users (name, email, phone, cedula, role, is_verified) VALUES ($1, $2, $3, $4, $5, true) RETURNING *',
-      [name, email, phone, cedula, 'client']
+      'INSERT INTO users (name, email, phone, cedula, role, is_verified, plan_type, payment_method) VALUES ($1, $2, $3, $4, $5, true, $6, $7) RETURNING *',
+      [name, email, phone, cedula, 'client', plan_type || null, payment_method || 'efectivo']
     );
     res.status(201).json({ message: 'Usuario creado exitosamente', user: result.rows[0] });
   } catch (error) {
@@ -38,10 +38,10 @@ exports.createUser = async (req, res) => {
 exports.updateUserClasses = async (req, res) => {
   try {
     const { id } = req.params;
-    const { available_classes, plan_type } = req.body;
+    const { available_classes, plan_type, payment_method } = req.body;
 
-    if (available_classes === undefined && plan_type === undefined) {
-      return res.status(400).json({ error: 'available_classes or plan_type is required' });
+    if (available_classes === undefined && plan_type === undefined && payment_method === undefined) {
+      return res.status(400).json({ error: 'At least one field (available_classes, plan_type, payment_method) is required' });
     }
 
     let query = 'UPDATE users SET ';
@@ -61,7 +61,14 @@ exports.updateUserClasses = async (req, res) => {
       counter++;
     }
 
-    query += `WHERE id = $${counter} RETURNING id, name, email, available_classes, plan_type`;
+    if (payment_method !== undefined) {
+      if (counter > 1) query += ', ';
+      query += `payment_method = $${counter} `;
+      values.push(payment_method);
+      counter++;
+    }
+
+    query += `WHERE id = $${counter} RETURNING id, name, email, available_classes, plan_type, payment_method`;
     values.push(id);
 
     const result = await db.query(query, values);

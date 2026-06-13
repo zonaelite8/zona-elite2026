@@ -141,7 +141,7 @@ export function AdminDashboard({ onLogout }: any) {
   const [userSelectData, setUserSelectData] = useState<{ slotId: number; modality: string } | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
-  const [newUserData, setNewUserData] = useState({ name: '', email: '', phone: '', cedula: '' });
+  const [newUserData, setNewUserData] = useState({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo' });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void; } | null>(null);
 
@@ -346,7 +346,7 @@ export function AdminDashboard({ onLogout }: any) {
       playSuccessSound();
       setShowUserSelectModal(false);
       setIsCreatingNewUser(false);
-      setNewUserData({ name: '', email: '', phone: '', cedula: '' });
+      setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo' });
       await fetchSlots();
       await fetchUsers();
     } catch (error: any) {
@@ -787,18 +787,19 @@ export function AdminDashboard({ onLogout }: any) {
                 <table className="w-full text-left border-collapse table-fixed text-[9px] sm:text-[10px] lg:text-sm">
                   <thead>
                     <tr className="border-b border-border text-[8px] sm:text-[9px] lg:text-xs uppercase tracking-wider text-muted-foreground font-semibold bg-secondary/30">
-                      <th className="px-1 py-2 lg:p-4 w-[14%] truncate" title="Nombre">Nombre</th>
-                      <th className="px-1 py-2 lg:p-4 w-[16%] truncate" title="Email">Email</th>
-                      <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Teléfono">Teléfono</th>
-                      <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Cédula">Cédula</th>
-                      <th className="px-1 py-2 lg:p-4 w-[15%] truncate" title="Plan">Plan</th>
+                      <th className="px-1 py-2 lg:p-4 w-[12%] truncate" title="Nombre">Nombre</th>
+                      <th className="px-1 py-2 lg:p-4 w-[14%] truncate" title="Email">Email</th>
+                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Teléfono">Teléfono</th>
+                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Cédula">Cédula</th>
+                      <th className="px-1 py-2 lg:p-4 w-[14%] truncate" title="Plan">Plan</th>
+                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Pago">Pago</th>
                       <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Clases Disp.">Clases</th>
-                      <th className="px-1 py-2 lg:p-4 w-[11%] truncate" title="Registrado">Registro</th>
+                      <th className="px-1 py-2 lg:p-4 w-[10%] truncate" title="Registrado">Registro</th>
                       <th className="px-1 py-2 lg:p-4 w-[10%] text-center" title="Acciones">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {usersList.length === 0 && <tr><td colSpan={8} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
+                    {usersList.length === 0 && <tr><td colSpan={9} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
                     {usersList.map((u: User) => (
                       <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
                         <td className="px-1 py-2 lg:p-4 font-bold truncate" title={u.name}>{u.name}</td>
@@ -819,6 +820,21 @@ export function AdminDashboard({ onLogout }: any) {
                             {plansList.map(p => (
                               <option key={p.id} value={p.name}>{p.name}</option>
                             ))}
+                          </select>
+                        </td>
+                        <td className="px-1 py-2 lg:p-4 truncate">
+                          <select 
+                            className="bg-background border border-border rounded px-0.5 py-0.5 text-[8px] sm:text-[9px] lg:text-sm text-foreground font-semibold focus:outline-none focus:border-primary w-full max-w-[90px] truncate"
+                            value={u.payment_method || 'efectivo'}
+                            onChange={(e) => {
+                              if (e.target.value !== u.payment_method) {
+                                handleUpdateUserAdmin(u.id, { payment_method: e.target.value });
+                              }
+                            }}
+                          >
+                            <option value="efectivo">Efectivo</option>
+                            <option value="qr">QR</option>
+                            <option value="transferencia">Transf.</option>
                           </select>
                         </td>
                         <td className="px-1 py-2 lg:p-4">
@@ -939,6 +955,32 @@ export function AdminDashboard({ onLogout }: any) {
                     <div>
                       <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Cédula (Opc.)</label>
                       <input type="text" value={newUserData.cedula} onChange={e => setNewUserData({...newUserData, cedula: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="10000000" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Plan</label>
+                      <select 
+                        value={newUserData.plan_type} 
+                        onChange={e => setNewUserData({...newUserData, plan_type: e.target.value})} 
+                        className="w-full bg-background border border-border rounded-xl px-2 py-2.5 text-xs focus:outline-none focus:border-primary"
+                      >
+                        {plansList.map(p => (
+                          <option key={p.id} value={p.name}>{p.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Método de Pago</label>
+                      <select 
+                        value={newUserData.payment_method} 
+                        onChange={e => setNewUserData({...newUserData, payment_method: e.target.value})} 
+                        className="w-full bg-background border border-border rounded-xl px-2 py-2.5 text-xs focus:outline-none focus:border-primary"
+                      >
+                        <option value="efectivo">Efectivo</option>
+                        <option value="qr">QR</option>
+                        <option value="transferencia">Transferencia</option>
+                      </select>
                     </div>
                   </div>
                 </div>

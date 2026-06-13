@@ -19,7 +19,7 @@ const generateToken = (user) => {
 
 // Register Standard User
 const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, plan_type } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: 'Name, email, and password are required' });
@@ -42,8 +42,8 @@ const register = async (req, res) => {
     // Insert user (default role is client unless specified)
     const userRole = role === 'admin' ? 'admin' : 'client';
     const result = await db.query(
-      'INSERT INTO users (name, email, password_hash, role, is_verified, verify_token) VALUES ($1, $2, $3, $4, false, $5) RETURNING id, name, email, role, phone, cedula',
-      [name, email, passwordHash, userRole, verifyToken]
+      'INSERT INTO users (name, email, password_hash, role, plan_type, is_verified, verify_token) VALUES ($1, $2, $3, $4, $5, false, $6) RETURNING id, name, email, role, phone, cedula, plan_type',
+      [name, email, passwordHash, userRole, plan_type || null, verifyToken]
     );
 
     const user = result.rows[0];

@@ -21,6 +21,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [planType, setPlanType] = useState('Entrenamiento Funcional - Plan Básico')
   const [code, setCode] = useState('')
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -47,10 +48,10 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     setError('')
     setSuccess('')
     try {
-      const response = await authApi.register(name, email, password)
+      const response = await authApi.register(name, email, password, planType)
       if ((response as any).needsVerification) {
         setMode('verify')
-        setSuccess('¡Registro exitoso! Ingresa el código que acabamos de enviar a tu correo.')
+        setSuccess('¡Registro exitoso! Ingresa el código enviado a tu correo. IMPORTANTE: Contáctanos al WA para activar tu plan y método de pago.')
       } else {
         onLogin(response.token, response.user)
         onNavigate(response.user.role as ViewState)
@@ -180,6 +181,19 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                 <Field label="Nombre Completo" type="text" value={name} onChange={setName} placeholder="Tu nombre" />
                 <Field label="Correo" type="email" value={email} onChange={setEmail} placeholder="atleta@ejemplo.com" />
                 <Field label="Contraseña" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium">Plan de Entrenamiento</label>
+                  <select 
+                    value={planType}
+                    onChange={e => setPlanType(e.target.value)}
+                    className="form-input w-full bg-background border border-border rounded-lg px-4 py-3"
+                  >
+                    <option value="Entrenamiento Funcional - Plan Básico">Fuerza Básico (3 días/sem) - $170.000</option>
+                    <option value="Entrenamiento Funcional - Plan Avanzado">Fuerza Avanzado (5 días/sem) - $230.000</option>
+                    <option value="Plan Élite Básico (Deportistas)">Élite Básico (1 día/sem) - $160.000</option>
+                    <option value="Plan Élite Avanzado">Élite Avanzado (2 días/sem) - $280.000</option>
+                  </select>
+                </div>
                 <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 mt-2">
                   {loading ? 'Creando cuenta…' : 'Crear Cuenta'}
                 </button>
