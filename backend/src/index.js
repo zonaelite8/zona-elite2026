@@ -69,6 +69,27 @@ app.get('/api/setup', async (req, res) => {
   }
 });
 
+app.get('/api/migrate-plans', async (req, res) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const db = require('./config/db');
+    const sqlPath = path.join(__dirname, '../../migration_plans.sql');
+    let sql = '';
+    if (fs.existsSync(sqlPath)) {
+      sql = fs.readFileSync(sqlPath, 'utf8');
+    } else {
+      sql = fs.readFileSync(path.join(__dirname, '../migration_plans.sql'), 'utf8');
+    }
+    await db.query(sql);
+    res.json({ success: true, message: 'Planes migration applied successfully' });
+  } catch (error) {
+    console.error('Error in /api/migrate-plans:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
 // Routes mounting
 app.use('/api/auth', authRoutes);
 app.use('/api/slots', slotRoutes);
