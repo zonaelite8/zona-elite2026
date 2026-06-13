@@ -134,7 +134,7 @@ const createBooking = async (req, res) => {
                 
                 <div style="text-align: center; margin-top: 40px;">
                   <p style="color: #8D94A5; font-size: 14px; margin-bottom: 15px;">¿No puedes asistir?</p>
-                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/cancelar?token=${cancelToken}" style="background-color: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block;">Cancelar mi reserva</a>
+                  <a href="${process.env.FRONTEND_URL || 'https://zonaelitemarinilla.com'}/cancelar?token=${cancelToken}" style="background-color: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block;">Cancelar mi reserva</a>
                 </div>
               </div>
               <div style="background-color: #12141A; padding: 20px; text-align: center; border-top: 1px solid #1E222B;">
@@ -323,7 +323,7 @@ const createAdminBooking = async (req, res) => {
                 
                 <div style="text-align: center; margin-top: 40px;">
                   <p style="color: #8D94A5; font-size: 14px; margin-bottom: 15px;">¿No puedes asistir?</p>
-                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/cancelar?token=${cancelToken}" style="background-color: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block;">Cancelar mi reserva</a>
+                  <a href="${process.env.FRONTEND_URL || 'https://zonaelitemarinilla.com'}/cancelar?token=${cancelToken}" style="background-color: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block;">Cancelar mi reserva</a>
                 </div>
               </div>
             </div>
