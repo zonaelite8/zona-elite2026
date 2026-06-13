@@ -128,12 +128,13 @@ export function AdminDashboard({ onLogout }: any) {
   const [isCreating, setIsCreating] = useState(false);
   const [createFuerza, setCreateFuerza] = useState(true);
   const [createPersonalizado, setCreatePersonalizado] = useState(true);
-  // Multi-date / multi-time block state
+  // Multi-date / multi-time block state (horarios de 1 hora fija)
   const [selectedDates, setSelectedDates] = useState<string[]>([format(new Date(), 'yyyy-MM-dd')]);
   const [timeBlocks, setTimeBlocks] = useState<{ start_time: string; end_time: string }[]>([
     { start_time: '08:00', end_time: '09:00' }
   ]);
   const [tempDate, setTempDate] = useState<Date>(new Date());
+  const [tempStartTime, setTempStartTime] = useState<string>('08:00');
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [newPlan, setNewPlan] = useState({ name: '', default_classes: 0, price: 0 });
   const [showUserSelectModal, setShowUserSelectModal] = useState(false);
@@ -894,39 +895,48 @@ export function AdminDashboard({ onLogout }: any) {
 
               {/* BLOQUES DE HORA */}
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">🕐 Horarios ({timeBlocks.length} bloque{timeBlocks.length !== 1 ? 's' : ''})</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">🕐 Horas de inicio <span className="normal-case font-normal text-muted-foreground/70">(cada clase dura 1 hora)</span></label>
                 <div className="space-y-2">
                   {timeBlocks.map((tb, i) => (
-                    <div key={i} className="flex items-center gap-2 bg-secondary/10 border border-border rounded-xl p-2">
+                    <div key={i} className="flex items-center gap-3 bg-secondary/10 border border-border rounded-xl px-3 py-2">
                       <CustomTimePicker
                         value={tb.start_time}
-                        onChange={t => setTimeBlocks(prev => prev.map((b, idx) => idx === i ? { ...b, start_time: t } : b))}
+                        onChange={t => {
+                          const [h, m] = t.split(':').map(Number);
+                          const endH = (h + 1) % 24;
+                          const endTime = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                          setTimeBlocks(prev => prev.map((b, idx) => idx === i ? { start_time: t, end_time: endTime } : b));
+                        }}
                         className="flex-1 justify-center bg-background text-sm"
                       />
-                      <span className="text-muted-foreground text-xs font-bold">→</span>
-                      <CustomTimePicker
-                        value={tb.end_time}
-                        onChange={t => setTimeBlocks(prev => prev.map((b, idx) => idx === i ? { ...b, end_time: t } : b))}
-                        className="flex-1 justify-center bg-background text-sm"
-                      />
+                      <span className="text-muted-foreground text-xs">→ <strong>{(() => { const [h,m] = tb.start_time.split(':').map(Number); const endH=(h+1)%24; return `${String(endH).padStart(2,'0')}:${String(m).padStart(2,'0')}`; })()}</strong></span>
                       {timeBlocks.length > 1 && (
-                        <button type="button" onClick={() => setTimeBlocks(prev => prev.filter((_, idx) => idx !== i))} className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"><X size={14} /></button>
+                        <button type="button" onClick={() => setTimeBlocks(prev => prev.filter((_, idx) => idx !== i))} className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"><X size={14} /></button>
                       )}
                     </div>
                   ))}
-                  <button
-                    type="button"
-                    onClick={() => setTimeBlocks(prev => {
-                      const last = prev[prev.length - 1];
-                      const newStart = last ? last.end_time : '08:00';
-                      const [h, m] = newStart.split(':').map(Number);
-                      const newEnd = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                      return [...prev, { start_time: newStart, end_time: newEnd }];
-                    })}
-                    className="w-full border border-dashed border-border rounded-xl py-2 text-xs font-bold uppercase text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors flex items-center justify-center gap-1"
-                  >
-                    <Plus size={13} /> Añadir otro horario
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <CustomTimePicker
+                      value={tempStartTime}
+                      onChange={t => setTempStartTime(t)}
+                      className="flex-1 justify-center bg-background text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const [h, m] = tempStartTime.split(':').map(Number);
+                        const endH = (h + 1) % 24;
+                        const endTime = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                        const newBlock = { start_time: tempStartTime, end_time: endTime };
+                        if (!timeBlocks.find(b => b.start_time === tempStartTime)) {
+                          setTimeBlocks(prev => [...prev, newBlock].sort((a,b) => a.start_time.localeCompare(b.start_time)));
+                        }
+                      }}
+                      className="flex items-center gap-1 px-3 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold uppercase hover:bg-primary/90 transition-colors whitespace-nowrap"
+                    >
+                      <Plus size={13} /> Añadir
+                    </button>
+                  </div>
                 </div>
               </div>
 
