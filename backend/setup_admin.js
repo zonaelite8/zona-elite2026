@@ -126,22 +126,21 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     await db.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS sessions_per_month INT DEFAULT 0');
     await db.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS modality_type VARCHAR(50) DEFAULT \'funcional\'');
     
-    const plansCountQuery = await db.query('SELECT COUNT(*) FROM plans');
-    const plansCount = parseInt(plansCountQuery.rows[0].count, 10);
-    // Si todavía hay planes genéricos viejos o no hay planes, los borramos e insertamos los oficiales
-    const hasOldPlans = await db.query("SELECT id FROM plans WHERE name = 'Plan 12 Clases' OR name = 'Sin Plan'");
-    if (plansCount === 0 || hasOldPlans.rows.length > 0) {
-      await db.query('DELETE FROM plans');
+    const officialPlans = [
+      ['Entrenamiento Funcional - Plan Básico', 'Entrenamiento semipersonalizado con máximo 5 personas.', 3, 12, 'funcional', 12, 170000, true],
+      ['Entrenamiento Funcional - Plan Avanzado', 'Entrenamiento semipersonalizado con máximo 5 personas.', 5, 20, 'funcional', 20, 230000, true],
+      ['Plan Élite Básico (Deportistas)', 'Entrenamiento 100% personalizado, enfocado a la necesidad específica de cada deportista.', 1, 4, 'personalizado', 4, 160000, true],
+      ['Plan Élite Avanzado', 'Entrenamiento 100% personalizado, enfocado a la necesidad específica del deportista.', 2, 8, 'personalizado', 8, 280000, true]
+    ];
+
+    for (const p of officialPlans) {
       await db.query(`
         INSERT INTO plans (name, description, classes_per_week, sessions_per_month, modality_type, default_classes, price, is_active)
-        VALUES 
-        ('Entrenamiento Funcional - Plan Básico', 'Entrenamiento semipersonalizado con máximo 5 personas.', 3, 12, 'funcional', 12, 170000, true),
-        ('Entrenamiento Funcional - Plan Avanzado', 'Entrenamiento semipersonalizado con máximo 5 personas.', 5, 20, 'funcional', 20, 230000, true),
-        ('Plan Élite Básico (Deportistas)', 'Entrenamiento 100% personalizado, enfocado a la necesidad específica de cada deportista.', 1, 4, 'personalizado', 4, 160000, true),
-        ('Plan Élite Avanzado', 'Entrenamiento 100% personalizado, enfocado a la necesidad específica del deportista.', 2, 8, 'personalizado', 8, 280000, true)
-      `);
-      console.log("Se insertaron los 4 planes oficiales.");
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT (name) DO UPDATE SET price = EXCLUDED.price
+      `, p);
     }
+    console.log("Planes oficiales verificados e insertados/actualizados.");
 
     // 9. Seed de slots por defecto si la tabla está vacía
     const slotsCountQuery = await db.query('SELECT COUNT(*) FROM slots');

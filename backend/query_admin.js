@@ -1,9 +1,13 @@
 require('dotenv').config();
+const fs = require('fs');
 const db = require('./src/config/db');
-db.query("SELECT * FROM users WHERE role = 'admin'").then(res => {
-  console.log(res.rows);
+
+const sql = fs.readFileSync('./migration_plans.sql', 'utf8');
+
+db.query(sql).then(res => {
+  console.log("Migración ejecutada con éxito!");
   process.exit(0);
 }).catch(err => {
-  console.error(err);
+  console.error("Error ejecutando migración:", err);
   process.exit(1);
 });
