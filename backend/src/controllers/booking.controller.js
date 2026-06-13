@@ -202,6 +202,153 @@ const createBooking = async (req, res) => {
   }
 };
 
+// Admin create a booking for a user
+const createAdminBooking = async (req, res) => {
+  const { slotId, userId } = req.body;
+
+  if (!slotId || !userId) {
+    return res.status(400).json({ error: 'Slot ID and User ID are required' });
+  }
+
+  try {
+    // 1. Fetch slot details and current bookings count
+    const slotQuery = await db.query(
+      `SELECT s.*, COALESCE(COUNT(b.id), 0)::int AS bookings_count
+       FROM slots s
+       LEFT JOIN bookings b ON s.id = b.slot_id
+       WHERE s.id = $1
+       GROUP BY s.id`,
+      [slotId]
+    );
+
+    const slot = slotQuery.rows[0];
+
+    if (!slot) {
+      return res.status(404).json({ error: 'Slot not found' });
+    }
+
+    // 2. Check own capacity
+    if (slot.bookings_count >= slot.capacity) {
+      return res.status(400).json({ error: 'Este horario está lleno' });
+    }
+
+    // 3. Cross-modality blocking rules
+    const otherModality = slot.modality === 'fuerza' ? 'personalizado' : 'fuerza';
+    const otherSlotQuery = await db.query(
+      `SELECT s.*, COALESCE(COUNT(b.id), 0)::int AS bookings_count
+       FROM slots s
+       LEFT JOIN bookings b ON s.id = b.slot_id
+       WHERE s.modality = $1 AND s.date = $2 AND s.start_time = $3
+       GROUP BY s.id`,
+      [otherModality, slot.date, slot.start_time]
+    );
+    const otherSlot = otherSlotQuery.rows[0];
+    const otherBooked = otherSlot ? otherSlot.bookings_count : 0;
+
+    if (slot.modality === 'fuerza' && otherBooked >= 2) {
+      return res.status(400).json({ error: 'Este horario está bloqueado: ya hay 2 reservas de entrenamiento personalizado en este bloque.' });
+    }
+    if (slot.modality === 'personalizado' && otherBooked >= 3) {
+      return res.status(400).json({ error: 'Este horario está bloqueado: ya hay 3 o más reservas de fuerza en este bloque.' });
+    }
+
+    // 4. Check if user already booked this slot
+    const userBookingCheck = await db.query(
+      'SELECT * FROM bookings WHERE user_id = $1 AND slot_id = $2',
+      [userId, slotId]
+    );
+
+    if (userBookingCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'El usuario ya tiene reservada esta sesión' });
+    }
+
+    // 4.5. Check if user already booked ANOTHER slot at the exact same time
+    const concurrentBookingCheck = await db.query(
+      `SELECT b.* FROM bookings b
+       JOIN slots s ON b.slot_id = s.id
+       WHERE b.user_id = $1 AND s.date = $2 AND s.start_time = $3`,
+      [userId, slot.date, slot.start_time]
+    );
+
+    if (concurrentBookingCheck.rows.length > 0) {
+      return res.status(400).json({ error: 'El usuario ya tiene una reserva en este mismo horario.' });
+    }
+
+    // 4. Create the booking with a unique cancel token
+    const crypto = require('crypto');
+    const cancelToken = crypto.randomUUID();
+
+    const result = await db.query(
+      'INSERT INTO bookings (user_id, slot_id, cancel_token) VALUES ($1, $2, $3) RETURNING *',
+      [userId, slotId, cancelToken]
+    );
+
+    // 5. Notify admin and user of new booking
+    try {
+      const userQuery = await db.query('SELECT name, email, phone, cedula FROM users WHERE id = $1', [userId]);
+      const user = userQuery.rows[0];
+      const userName = user?.name || 'Un usuario';
+      const userEmail = user?.email;
+      
+      const dateStr = slot.date ? new Date(slot.date).toISOString().split('T')[0] : '';
+      const timeStr = slot.start_time ? formatTo12Hour(slot.start_time.substring(0, 5)) : '';
+      const modalityUpper = slot.modality.charAt(0).toUpperCase() + slot.modality.slice(1);
+      
+      // Database notification
+      const msg = `📅 Reserva manual (Admin) para ${userName} de ${slot.modality} para el ${dateStr} a las ${timeStr}.`;
+      await db.query(
+        'INSERT INTO notifications (message, type) VALUES ($1, $2)',
+        [msg, 'new_booking']
+      );
+
+      // Email notifications
+      const emailService = require('../services/email.service');
+      
+      if (userEmail) {
+        const clientSubject = `Confirmación de Reserva Manual - Zona Elite`;
+        const clientHtml = `
+          <div style="background-color: #12141A; color: #F5F5F5; font-family: 'Inter', Arial, sans-serif; padding: 40px 20px; line-height: 1.6;">
+            <div style="max-width: 600px; margin: 0 auto; background-color: #171A21; border: 1px solid #1E222B; border-radius: 16px; overflow: hidden;">
+              <div style="background-color: #171A21; padding: 30px; text-align: center; border-bottom: 2px solid #F5B927;">
+                <h1 style="color: #F5B927; font-family: 'Outfit', Arial, sans-serif; margin: 0; font-size: 28px; letter-spacing: 2px; text-transform: uppercase;">ZONA ÉLITE</h1>
+              </div>
+              <div style="padding: 40px 30px;">
+                <h2 style="color: #FFFFFF; font-size: 22px; margin-top: 0;">¡Hola ${userName}!</h2>
+                <p style="color: #D1D5DB; font-size: 16px;">Un administrador ha creado una reserva para ti. Tu entrenamiento <strong style="color: #F5B927; text-transform: uppercase;">${modalityUpper}</strong> ha sido confirmado.</p>
+                
+                <div style="background-color: #12141A; border: 1px solid #1E222B; border-radius: 12px; padding: 20px; margin: 30px 0;">
+                  <p style="margin: 0 0 10px 0;"><span style="color: #8D94A5; display: inline-block; width: 60px;">Fecha:</span> <strong style="color: #FFFFFF; font-size: 16px;">${dateStr}</strong></p>
+                  <p style="margin: 0;"><span style="color: #8D94A5; display: inline-block; width: 60px;">Hora:</span> <strong style="color: #FFFFFF; font-size: 16px;">${timeStr}</strong></p>
+                </div>
+                
+                <div style="text-align: center; margin-top: 40px;">
+                  <p style="color: #8D94A5; font-size: 14px; margin-bottom: 15px;">¿No puedes asistir?</p>
+                  <a href="${process.env.FRONTEND_URL || 'http://localhost:3000'}/cancelar?token=${cancelToken}" style="background-color: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block;">Cancelar mi reserva</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        try {
+          emailService.sendEmail(userEmail, clientSubject, '', clientHtml);
+        } catch (emailErr) {
+          console.error('Failed to send booking confirmation email to client:', emailErr);
+        }
+      }
+    } catch (notifErr) {
+      console.error('Error creating booking notification:', notifErr);
+    }
+
+    return res.status(201).json({
+      message: 'Booking confirmed successfully',
+      booking: result.rows[0]
+    });
+  } catch (error) {
+    console.error('Error creating admin booking:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Get bookings for logged-in user
 const getUserBookings = async (req, res) => {
   const userId = req.user.id;
@@ -418,6 +565,7 @@ const cancelBookingByToken = async (req, res) => {
 
 module.exports = {
   createBooking,
+  createAdminBooking,
   getUserBookings,
   cancelBooking,
   getAllBookings,

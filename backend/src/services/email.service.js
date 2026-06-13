@@ -1,7 +1,8 @@
 const { Resend } = require('resend');
 require('dotenv').config();
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const apiKey = process.env.RESEND_API_KEY;
+const resend = apiKey ? new Resend(apiKey) : null;
 
 /**
  * Enviar un correo electrónico via Resend API (funciona en Render)
@@ -11,6 +12,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
  * @param {string} html - (Opcional) Contenido en formato HTML
  */
 const sendEmail = async (to, subject, text, html) => {
+  if (!resend) {
+    console.warn(`[Mock Email] No RESEND_API_KEY. Skipping email to ${to}`);
+    return false;
+  }
   try {
     const { data, error } = await resend.emails.send({
       from: 'Zona Elite <info@zonaelitemarinilla.com>',

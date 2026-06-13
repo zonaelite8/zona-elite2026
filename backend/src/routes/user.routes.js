@@ -9,6 +9,9 @@ router.use(authenticateToken, isAdmin);
 // Get all users
 router.get('/', userController.getAllUsers);
 
+// Create a new user
+router.post('/', userController.createUser);
+
 // Update user available classes
 router.put('/:id/classes', userController.updateUserClasses);
 

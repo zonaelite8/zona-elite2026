@@ -110,7 +110,7 @@ const formatTo12Hour = (timeStr: string) => {
   return `${hourFormatted}:${minutes} ${ampm}`;
 };
 
-export function AdminDashboard({ onLogout, user }: any) {
+export function AdminDashboard({ onLogout }: any) {
   const [activeTab, setActiveTab] = useState<'calendario' | 'horarios' | 'usuarios' | 'planes'>('calendario');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(startOfToday());
@@ -131,6 +131,11 @@ export function AdminDashboard({ onLogout, user }: any) {
   const [createPersonalizado, setCreatePersonalizado] = useState(true);
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [newPlan, setNewPlan] = useState({ name: '', default_classes: 0, price: 0 });
+  const [showUserSelectModal, setShowUserSelectModal] = useState(false);
+  const [userSelectData, setUserSelectData] = useState<{ slotId: number; modality: string } | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
+  const [newUserData, setNewUserData] = useState({ name: '', email: '', phone: '', cedula: '' });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void; } | null>(null);
 
@@ -262,6 +267,33 @@ export function AdminDashboard({ onLogout, user }: any) {
       await fetchSlots();
     } catch (error: any) {
       showToast(error.message || 'Error al crear horario', 'error');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleAdminCreateBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userSelectData) return;
+    setIsCreating(true);
+    try {
+      let finalUserId = selectedUserId;
+      if (isCreatingNewUser) {
+        const { user } = await usersApi.create({ ...newUserData, role: 'client' });
+        finalUserId = user.id;
+      }
+      if (!finalUserId) throw new Error("Debe seleccionar o crear un usuario");
+
+      await bookingsApi.createAdmin(userSelectData.slotId, finalUserId);
+      showToast('¡Reserva manual creada con éxito!');
+      playSuccessSound();
+      setShowUserSelectModal(false);
+      setIsCreatingNewUser(false);
+      setNewUserData({ name: '', email: '', phone: '', cedula: '' });
+      await fetchSlots();
+      await fetchUsers();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || error.message || 'Error al crear reserva', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -504,29 +536,43 @@ export function AdminDashboard({ onLogout, user }: any) {
                               {/* Fuerza List */}
                               <div>
                                 <h4 className="text-xs font-bold uppercase text-primary mb-3">🏋️ Entre. Fuerza</h4>
-                                {!hasFuerza ? <p className="text-xs text-muted-foreground italic">No disponible</p> : block.fuerza.bookings.length === 0 ? <p className="text-xs text-muted-foreground italic">Nadie ha reservado</p> : (
-                                  <ul className="space-y-2">
-                                    {block.fuerza.bookings.map((b: any) => (
-                                      <li key={b.booking_id} className="flex justify-between items-center bg-card border border-border p-3 rounded-lg">
-                                        <div className="text-sm font-bold">{b.user_name}</div>
-                                        <button onClick={() => handleCancelBooking(b.booking_id)} className="text-xs text-red-500 hover:underline">Cancelar</button>
-                                      </li>
-                                    ))}
-                                  </ul>
+                                {!hasFuerza ? <p className="text-xs text-muted-foreground italic">No disponible</p> : (
+                                  <>
+                                    {block.fuerza.bookings.length > 0 && (
+                                      <ul className="space-y-2 mb-3">
+                                        {block.fuerza.bookings.map((b: any) => (
+                                          <li key={b.booking_id} className="flex justify-between items-center bg-card border border-border p-3 rounded-lg">
+                                            <div className="text-sm font-bold">{b.user_name}</div>
+                                            <button onClick={() => handleCancelBooking(b.booking_id)} className="text-xs text-red-500 hover:underline">Cancelar</button>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                    <button onClick={() => { setUserSelectData({ slotId: block.fuerza.id, modality: 'Fuerza' }); setSelectedUserId(''); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} className="w-full border border-dashed border-primary/50 text-primary hover:bg-primary/10 transition-colors rounded-lg py-2 text-xs font-bold uppercase flex justify-center items-center gap-1">
+                                      <Plus size={14} /> Añadir Cliente / Usuario
+                                    </button>
+                                  </>
                                 )}
                               </div>
                               {/* Personalizado List */}
                               <div>
                                 <h4 className="text-xs font-bold uppercase text-emerald-400 mb-3">🎯 Entre. Pers.</h4>
-                                {!hasPers ? <p className="text-xs text-muted-foreground italic">No disponible</p> : block.personalizado.bookings.length === 0 ? <p className="text-xs text-muted-foreground italic">Nadie ha reservado</p> : (
-                                  <ul className="space-y-2">
-                                    {block.personalizado.bookings.map((b: any) => (
-                                      <li key={b.booking_id} className="flex justify-between items-center bg-card border border-border p-3 rounded-lg">
-                                        <div className="text-sm font-bold">{b.user_name}</div>
-                                        <button onClick={() => handleCancelBooking(b.booking_id)} className="text-xs text-red-500 hover:underline">Cancelar</button>
-                                      </li>
-                                    ))}
-                                  </ul>
+                                {!hasPers ? <p className="text-xs text-muted-foreground italic">No disponible</p> : (
+                                  <>
+                                    {block.personalizado.bookings.length > 0 && (
+                                      <ul className="space-y-2 mb-3">
+                                        {block.personalizado.bookings.map((b: any) => (
+                                          <li key={b.booking_id} className="flex justify-between items-center bg-card border border-border p-3 rounded-lg">
+                                            <div className="text-sm font-bold">{b.user_name}</div>
+                                            <button onClick={() => handleCancelBooking(b.booking_id)} className="text-xs text-red-500 hover:underline">Cancelar</button>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    )}
+                                    <button onClick={() => { setUserSelectData({ slotId: block.personalizado.id, modality: 'Personalizado' }); setSelectedUserId(''); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} className="w-full border border-dashed border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 transition-colors rounded-lg py-2 text-xs font-bold uppercase flex justify-center items-center gap-1">
+                                      <Plus size={14} /> Añadir Cliente / Usuario
+                                    </button>
+                                  </>
                                 )}
                               </div>
                             </div>
@@ -721,6 +767,66 @@ export function AdminDashboard({ onLogout, user }: any) {
 
         </div>
       </main>
+
+      {/* MODAL AGREGAR CLIENTE MANUAL */}
+      {showUserSelectModal && (
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowUserSelectModal(false); }}>
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-border flex justify-between items-center bg-secondary/30">
+              <h3 className="font-heading font-bold uppercase text-base">Agregar a {userSelectData?.modality}</h3>
+              <button type="button" onClick={() => setShowUserSelectModal(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-secondary"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleAdminCreateBooking} className="p-5 space-y-4">
+              <div className="flex gap-2 mb-4 bg-secondary/30 p-1.5 rounded-xl border border-border">
+                <button type="button" onClick={() => setIsCreatingNewUser(false)} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${!isCreatingNewUser ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Seleccionar</button>
+                <button type="button" onClick={() => setIsCreatingNewUser(true)} className={`flex-1 py-2 text-xs font-bold uppercase rounded-lg transition-colors ${isCreatingNewUser ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Crear Nuevo</button>
+              </div>
+
+              {!isCreatingNewUser ? (
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Seleccionar Cliente Existente</label>
+                  <select 
+                    required={!isCreatingNewUser}
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary text-foreground"
+                  >
+                    <option value="">-- Seleccione --</option>
+                    {usersList.map(u => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Nombre Completo</label>
+                    <input type="text" required={isCreatingNewUser} value={newUserData.name} onChange={e => setNewUserData({...newUserData, name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="Ej: Juan Pérez" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Correo Electrónico</label>
+                    <input type="email" required={isCreatingNewUser} value={newUserData.email} onChange={e => setNewUserData({...newUserData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="ejemplo@correo.com" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Teléfono (Opc.)</label>
+                      <input type="tel" value={newUserData.phone} onChange={e => setNewUserData({...newUserData, phone: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="3000000000" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Cédula (Opc.)</label>
+                      <input type="text" value={newUserData.cedula} onChange={e => setNewUserData({...newUserData, cedula: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="10000000" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button type="submit" disabled={isCreating || (!isCreatingNewUser && !selectedUserId)} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2">
+                {isCreating ? 'Guardando...' : 'Asignar Cupo'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL HORARIO */}
       {showManualModal && (

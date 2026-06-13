@@ -14,6 +14,27 @@ exports.getAllUsers = async (req, res) => {
   }
 };
 
+exports.createUser = async (req, res) => {
+  const { name, email, phone, cedula } = req.body;
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required' });
+  }
+  try {
+    const userExist = await db.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (userExist.rows.length > 0) {
+      return res.status(400).json({ error: 'Ya existe un usuario con este correo' });
+    }
+    const result = await db.query(
+      'INSERT INTO users (name, email, phone, cedula, role, is_verified) VALUES ($1, $2, $3, $4, $5, true) RETURNING *',
+      [name, email, phone, cedula, 'client']
+    );
+    res.status(201).json({ message: 'Usuario creado exitosamente', user: result.rows[0] });
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: 'Error al crear el usuario' });
+  }
+};
+
 exports.updateUserClasses = async (req, res) => {
   try {
     const { id } = req.params;

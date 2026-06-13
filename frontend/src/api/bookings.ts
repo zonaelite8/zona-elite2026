@@ -21,6 +21,9 @@ export const bookingsApi = {
   create: (slotId: number) =>
     api.post<{ booking: Booking }>('/bookings', { slotId }),
 
+  createAdmin: (slotId: number, userId: string) =>
+    api.post<{ booking: Booking }>('/bookings/admin', { slotId, userId }),
+
   cancel: (bookingId: number) =>
     api.delete<{ message: string }>(`/bookings/${bookingId}`),
 

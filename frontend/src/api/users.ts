@@ -14,6 +14,8 @@ export interface User {
 
 export const usersApi = {
   getAll: () => api.get<User[]>('/users'),
+  create: (data: { name: string; email: string; phone?: string; cedula?: string; role?: string }) => 
+    api.post<{ message: string; user: User }>('/users', data),
   updateClasses: (id: string, data: { available_classes?: number, plan_type?: string }) => 
     api.put<{ message: string; user: User }>(`/users/${id}/classes`, data)
       .then(res => res.user),
