@@ -126,9 +126,14 @@ export function AdminDashboard({ onLogout }: any) {
   const [expandedBlockKey, setExpandedBlockKey] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
-  const [manualSlot, setManualSlot] = useState({ date: format(new Date(), 'yyyy-MM-dd'), start_time: '08:00', end_time: '09:00' });
   const [createFuerza, setCreateFuerza] = useState(true);
   const [createPersonalizado, setCreatePersonalizado] = useState(true);
+  // Multi-date / multi-time block state
+  const [selectedDates, setSelectedDates] = useState<string[]>([format(new Date(), 'yyyy-MM-dd')]);
+  const [timeBlocks, setTimeBlocks] = useState<{ start_time: string; end_time: string }[]>([
+    { start_time: '08:00', end_time: '09:00' }
+  ]);
+  const [tempDate, setTempDate] = useState<Date>(new Date());
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [newPlan, setNewPlan] = useState({ name: '', default_classes: 0, price: 0 });
   const [showUserSelectModal, setShowUserSelectModal] = useState(false);
@@ -250,23 +255,22 @@ export function AdminDashboard({ onLogout }: any) {
 
   const handleCreateManualSlot = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedDates.length === 0) { showToast('Agrega al menos una fecha', 'error'); return; }
+    if (timeBlocks.length === 0) { showToast('Agrega al menos un horario', 'error'); return; }
     setIsCreating(true);
     try {
-      const startWithSeconds = manualSlot.start_time.length === 5 ? `${manualSlot.start_time}:00` : manualSlot.start_time;
-      const endWithSeconds = manualSlot.end_time.length === 5 ? `${manualSlot.end_time}:00` : manualSlot.end_time;
-      await slotsApi.create({
-        date: manualSlot.date,
-        start_time: startWithSeconds,
-        end_time: endWithSeconds,
+      const result = await slotsApi.create({
+        dates: selectedDates,
+        timeBlocks,
         create_fuerza: createFuerza,
         create_personalizado: createPersonalizado
       });
-      showToast('¡Horario creado con éxito!');
+      showToast(result.message || '¡Horarios creados!');
       playSuccessSound();
       setShowManualModal(false);
       await fetchSlots();
     } catch (error: any) {
-      showToast(error.message || 'Error al crear horario', 'error');
+      showToast(error.response?.data?.error || error.message || 'Error al crear horario', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -828,54 +832,113 @@ export function AdminDashboard({ onLogout }: any) {
         </div>
       )}
 
-      {/* MODAL HORARIO */}
+      {/* MODAL HORARIO - MULTI DATE / MULTI TIME */}
       {showManualModal && (
         <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowManualModal(false); }}>
-          <div className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
             <div className="p-5 border-b border-border flex justify-between items-center bg-secondary/30">
-              <h3 className="font-heading font-bold uppercase text-base">Añadir Horario</h3>
+              <div>
+                <h3 className="font-heading font-bold uppercase text-base">Añadir Horarios</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Selecciona varios días y varios rangos de hora</p>
+              </div>
               <button type="button" onClick={() => setShowManualModal(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-secondary"><X size={20} /></button>
             </div>
-            <form onSubmit={handleCreateManualSlot} className="p-5 space-y-4">
+            <form onSubmit={handleCreateManualSlot} className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
+
+              {/* MODALIDADES */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Modalidades</label>
                 <div className="flex items-center gap-6 bg-secondary/20 p-3.5 rounded-xl border border-border">
                   <label className="flex items-center gap-2.5 text-sm font-semibold cursor-pointer select-none">
-                    <input type="checkbox" checked={createFuerza} onChange={e => setCreateFuerza(e.target.checked)} className="rounded border-border text-primary focus:ring-primary h-4 w-4 bg-background accent-primary" /> Fuerza
+                    <input type="checkbox" checked={createFuerza} onChange={e => setCreateFuerza(e.target.checked)} className="rounded border-border text-primary focus:ring-primary h-4 w-4 bg-background accent-primary" /> 🏋️ Fuerza
                   </label>
                   <label className="flex items-center gap-2.5 text-sm font-semibold cursor-pointer select-none">
-                    <input type="checkbox" checked={createPersonalizado} onChange={e => setCreatePersonalizado(e.target.checked)} className="rounded border-border text-primary focus:ring-primary h-4 w-4 bg-background accent-primary" /> Personalizado
+                    <input type="checkbox" checked={createPersonalizado} onChange={e => setCreatePersonalizado(e.target.checked)} className="rounded border-border text-primary focus:ring-primary h-4 w-4 bg-background accent-primary" /> 🎯 Personalizado
                   </label>
                 </div>
               </div>
+
+              {/* FECHAS */}
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Fecha</label>
-                <CustomDatePicker 
-                  selectedDate={new Date(manualSlot.date + 'T00:00:00')} 
-                  onChange={d => setManualSlot(s => ({ ...s, date: format(d, 'yyyy-MM-dd') }))} 
-                  className="w-full justify-between px-4 py-3 bg-background"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Inicio</label>
-                  <CustomTimePicker 
-                    value={manualSlot.start_time} 
-                    onChange={t => setManualSlot(s => ({ ...s, start_time: t }))} 
-                    className="w-full justify-center bg-background"
-                  />
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">📅 Días ({selectedDates.length} seleccionado{selectedDates.length !== 1 ? 's' : ''})</label>
+                <div className="space-y-2">
+                  {selectedDates.map((d, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <div className="flex-1 bg-secondary/20 border border-border rounded-xl px-4 py-2 text-sm font-semibold">
+                        {format(new Date(d + 'T00:00:00'), "EEEE dd 'de' MMMM yyyy", { locale: es })}
+                      </div>
+                      <button type="button" onClick={() => setSelectedDates(prev => prev.filter((_, idx) => idx !== i))} className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"><X size={14} /></button>
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-2">
+                    <CustomDatePicker
+                      selectedDate={tempDate}
+                      onChange={d => setTempDate(d)}
+                      className="flex-1 justify-between px-4 py-2.5 bg-background text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const dateStr = format(tempDate, 'yyyy-MM-dd');
+                        if (!selectedDates.includes(dateStr)) {
+                          setSelectedDates(prev => [...prev, dateStr].sort());
+                        }
+                      }}
+                      className="flex items-center gap-1 px-3 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold uppercase hover:bg-primary/90 transition-colors whitespace-nowrap"
+                    >
+                      <Plus size={13} /> Añadir
+                    </button>
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Fin</label>
-                  <CustomTimePicker 
-                    value={manualSlot.end_time} 
-                    onChange={t => setManualSlot(s => ({ ...s, end_time: t }))} 
-                    className="w-full justify-center bg-background"
-                  />
+              </div>
+
+              {/* BLOQUES DE HORA */}
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">🕐 Horarios ({timeBlocks.length} bloque{timeBlocks.length !== 1 ? 's' : ''})</label>
+                <div className="space-y-2">
+                  {timeBlocks.map((tb, i) => (
+                    <div key={i} className="flex items-center gap-2 bg-secondary/10 border border-border rounded-xl p-2">
+                      <CustomTimePicker
+                        value={tb.start_time}
+                        onChange={t => setTimeBlocks(prev => prev.map((b, idx) => idx === i ? { ...b, start_time: t } : b))}
+                        className="flex-1 justify-center bg-background text-sm"
+                      />
+                      <span className="text-muted-foreground text-xs font-bold">→</span>
+                      <CustomTimePicker
+                        value={tb.end_time}
+                        onChange={t => setTimeBlocks(prev => prev.map((b, idx) => idx === i ? { ...b, end_time: t } : b))}
+                        className="flex-1 justify-center bg-background text-sm"
+                      />
+                      {timeBlocks.length > 1 && (
+                        <button type="button" onClick={() => setTimeBlocks(prev => prev.filter((_, idx) => idx !== i))} className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"><X size={14} /></button>
+                      )}
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setTimeBlocks(prev => {
+                      const last = prev[prev.length - 1];
+                      const newStart = last ? last.end_time : '08:00';
+                      const [h, m] = newStart.split(':').map(Number);
+                      const newEnd = `${String(h + 1).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                      return [...prev, { start_time: newStart, end_time: newEnd }];
+                    })}
+                    className="w-full border border-dashed border-border rounded-xl py-2 text-xs font-bold uppercase text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors flex items-center justify-center gap-1"
+                  >
+                    <Plus size={13} /> Añadir otro horario
+                  </button>
                 </div>
               </div>
-              <button type="submit" disabled={isCreating} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed">
-                {isCreating ? 'Guardando...' : 'Crear'}
+
+              {/* RESUMEN */}
+              {selectedDates.length > 0 && timeBlocks.length > 0 && (
+                <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 text-xs text-primary">
+                  <strong>Resumen:</strong> Se crearán hasta <strong>{selectedDates.length * timeBlocks.length}</strong> bloques de horario en {selectedDates.length} día{selectedDates.length !== 1 ? 's' : ''} con {timeBlocks.length} franja{timeBlocks.length !== 1 ? 's' : ''} horaria{timeBlocks.length !== 1 ? 's' : ''}.
+                </div>
+              )}
+
+              <button type="submit" disabled={isCreating || selectedDates.length === 0 || timeBlocks.length === 0} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed">
+                {isCreating ? 'Creando...' : `Crear ${selectedDates.length * timeBlocks.length} Bloque${selectedDates.length * timeBlocks.length !== 1 ? 's' : ''}`}
               </button>
             </form>
           </div>

@@ -81,12 +81,34 @@ const getSlots = async (req, res) => {
   }
 };
 
-// Create a new time block — auto-creates BOTH fuerza and personalizado slots
+// Create slots — supports multiple dates and multiple time blocks at once
 const createSlot = async (req, res) => {
-  const { date, start_time, end_time, create_fuerza = true, create_personalizado = true } = req.body;
+  const {
+    date,           // legacy single date support
+    dates,          // new: array of date strings ['2026-06-13', ...]
+    start_time,     // legacy single time
+    end_time,
+    timeBlocks,     // new: array of {start_time, end_time}
+    create_fuerza = true,
+    create_personalizado = true
+  } = req.body;
 
-  if (!date || !start_time || !end_time) {
-    return res.status(400).json({ error: 'Fields date, start_time, end_time are required' });
+  // Build list of dates to process
+  const dateList = dates && Array.isArray(dates) && dates.length > 0
+    ? dates
+    : (date ? [date] : []);
+
+  // Build list of time blocks to process
+  const blockList = timeBlocks && Array.isArray(timeBlocks) && timeBlocks.length > 0
+    ? timeBlocks
+    : (start_time && end_time ? [{ start_time, end_time }] : []);
+
+  if (dateList.length === 0) {
+    return res.status(400).json({ error: 'Se requiere al menos una fecha.' });
+  }
+
+  if (blockList.length === 0) {
+    return res.status(400).json({ error: 'Se requiere al menos un bloque de horario.' });
   }
 
   if (!create_fuerza && !create_personalizado) {
@@ -95,50 +117,62 @@ const createSlot = async (req, res) => {
 
   try {
     const created = [];
+    const skipped = [];
 
-    if (create_fuerza) {
-      // Create fuerza slot if not exists
-      const fuerzaCheck = await db.query(
-        'SELECT id FROM slots WHERE modality = $1 AND date = $2 AND start_time = $3',
-        ['fuerza', date, start_time]
-      );
-      if (fuerzaCheck.rows.length === 0) {
-        const r = await db.query(
-          'INSERT INTO slots (modality, date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          ['fuerza', date, start_time, end_time, 5]
-        );
-        created.push(r.rows[0]);
-      }
-    }
+    for (const d of dateList) {
+      for (const tb of blockList) {
+        const st = tb.start_time.length === 5 ? `${tb.start_time}:00` : tb.start_time;
+        const et = tb.end_time.length === 5 ? `${tb.end_time}:00` : tb.end_time;
 
-    if (create_personalizado) {
-      // Create personalizado slot if not exists
-      const persCheck = await db.query(
-        'SELECT id FROM slots WHERE modality = $1 AND date = $2 AND start_time = $3',
-        ['personalizado', date, start_time]
-      );
-      if (persCheck.rows.length === 0) {
-        const r = await db.query(
-          'INSERT INTO slots (modality, date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-          ['personalizado', date, start_time, end_time, 2]
-        );
-        created.push(r.rows[0]);
+        if (create_fuerza) {
+          const fuerzaCheck = await db.query(
+            'SELECT id FROM slots WHERE modality = $1 AND date = $2 AND start_time = $3',
+            ['fuerza', d, st]
+          );
+          if (fuerzaCheck.rows.length === 0) {
+            const r = await db.query(
+              'INSERT INTO slots (modality, date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+              ['fuerza', d, st, et, 5]
+            );
+            created.push(r.rows[0]);
+          } else {
+            skipped.push({ modality: 'fuerza', date: d, start_time: st });
+          }
+        }
+
+        if (create_personalizado) {
+          const persCheck = await db.query(
+            'SELECT id FROM slots WHERE modality = $1 AND date = $2 AND start_time = $3',
+            ['personalizado', d, st]
+          );
+          if (persCheck.rows.length === 0) {
+            const r = await db.query(
+              'INSERT INTO slots (modality, date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+              ['personalizado', d, st, et, 2]
+            );
+            created.push(r.rows[0]);
+          } else {
+            skipped.push({ modality: 'personalizado', date: d, start_time: st });
+          }
+        }
       }
     }
 
     if (created.length === 0) {
-      return res.status(400).json({ error: 'Ya existe un bloque de horario para esa fecha, hora y modalidad seleccionada.' });
+      return res.status(400).json({ error: 'Todos los horarios seleccionados ya existen.' });
     }
 
     return res.status(201).json({
-      message: `Horario creado: ${created.length} slot(s) generados`,
-      slots: created
+      message: `¡Creados ${created.length} cupo(s)! ${skipped.length > 0 ? `(${skipped.length} ya existían y se omitieron)` : ''}`,
+      slots: created,
+      skipped
     });
   } catch (error) {
     console.error('Error creating slot:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 // Get all slots with booking details for admin
 const getAdminSlots = async (req, res) => {

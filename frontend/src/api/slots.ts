@@ -23,8 +23,13 @@ export const slotsApi = {
   getAdminSlots: (date?: string) =>
     api.get<any[]>(date ? `/slots/admin?date=${date}` : '/slots/admin'),
 
-  create: (payload: { date: string; start_time: string; end_time: string; create_fuerza?: boolean; create_personalizado?: boolean }) =>
-    api.post<{ slots: Slot[] }>('/slots', payload),
+  create: (payload: {
+    dates: string[];
+    timeBlocks: { start_time: string; end_time: string }[];
+    create_fuerza?: boolean;
+    create_personalizado?: boolean;
+  }) =>
+    api.post<{ message: string; slots: Slot[]; skipped: any[] }>('/slots', payload),
 
   createWeekly: (payload: { startDate: string; endDate: string }) =>
     api.post<{ message: string }>('/slots/weekly', payload),
