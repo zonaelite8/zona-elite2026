@@ -973,8 +973,8 @@ export function AdminDashboard({ onLogout }: any) {
                     <input type="text" required={isCreatingNewUser} value={newUserData.name} onChange={e => setNewUserData({...newUserData, name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="Ej: Juan Pérez" />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Correo Electrónico</label>
-                    <input type="email" required={isCreatingNewUser} value={newUserData.email} onChange={e => setNewUserData({...newUserData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="ejemplo@correo.com" />
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Correo Electrónico (Opc.)</label>
+                    <input type="email" value={newUserData.email} onChange={e => setNewUserData({...newUserData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="ejemplo@correo.com" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -1038,8 +1038,8 @@ export function AdminDashboard({ onLogout }: any) {
                   <input type="text" required value={newUserData.name} onChange={e => setNewUserData({...newUserData, name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="Ej: Juan Pérez" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Correo Electrónico</label>
-                  <input type="email" required value={newUserData.email} onChange={e => setNewUserData({...newUserData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="ejemplo@correo.com" />
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Correo Electrónico (Opc.)</label>
+                  <input type="email" value={newUserData.email} onChange={e => setNewUserData({...newUserData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="ejemplo@correo.com" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

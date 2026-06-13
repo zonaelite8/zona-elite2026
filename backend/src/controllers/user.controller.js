@@ -15,9 +15,12 @@ exports.getAllUsers = async (req, res) => {
 };
 
 exports.createUser = async (req, res) => {
-  const { name, email, phone, cedula, plan_type, payment_method } = req.body;
-  if (!name || !email) {
-    return res.status(400).json({ error: 'Name and email are required' });
+  let { name, email, phone, cedula, plan_type, payment_method } = req.body;
+  if (!name) {
+    return res.status(400).json({ error: 'Name is required' });
+  }
+  if (!email) {
+    email = `cliente_${Date.now()}@zonaelite.local`;
   }
   try {
     const userExist = await db.query('SELECT id FROM users WHERE email = $1', [email]);
