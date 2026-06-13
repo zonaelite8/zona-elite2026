@@ -356,7 +356,7 @@ export function AdminDashboard({ onLogout }: any) {
     }
   };
 
-  const handleUpdateUserAdmin = async (id: string, data: { available_classes?: number, plan_type?: string }) => {
+  const handleUpdateUserAdmin = async (id: string, data: { available_classes?: number, plan_type?: string, payment_method?: string }) => {
     try {
       // Si cambian el plan, podríamos actualizar las clases por defecto opcionalmente
       // pero para mantenerlo simple y seguro, si el usuario elige un plan,
