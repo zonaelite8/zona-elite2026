@@ -252,6 +252,58 @@ export function AdminDashboard({ onLogout }: any) {
     });
   };
 
+  // Toggle block/unblock a modality slot
+  const handleToggleModality = async (slotId: number) => {
+    try {
+      const result = await slotsApi.toggleBlock(slotId);
+      showToast(result.message || 'Modalidad actualizada');
+      await fetchSlots();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || error.message || 'Error', 'error');
+    }
+  };
+
+  // Add a missing modality to an existing time block
+  const handleAddModality = async (block: any, modality: 'fuerza' | 'personalizado') => {
+    try {
+      const dateStr = block.date.includes('T') ? block.date.split('T')[0] : block.date;
+      const st = block.start_time.length === 5 ? `${block.start_time}:00` : block.start_time;
+      const [h, m] = st.replace(':00', '').split(':').map(Number);
+      const endH = (h + 1) % 24;
+      const et = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}:00`;
+      await slotsApi.create({
+        dates: [dateStr],
+        timeBlocks: [{ start_time: st, end_time: et }],
+        create_fuerza: modality === 'fuerza',
+        create_personalizado: modality === 'personalizado'
+      });
+      showToast(`¡Modalidad ${modality === 'fuerza' ? 'Fuerza' : 'Personalizado'} agregada!`);
+      playSuccessSound();
+      await fetchSlots();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || error.message || 'Error', 'error');
+    }
+  };
+
+  // Remove (delete) a modality slot from a block, with confirmation
+  const handleRemoveModality = (slotId: number, modalityName: string) => {
+    setConfirmModal({
+      title: `¿Eliminar ${modalityName}?`,
+      message: `Se eliminará la modalidad ${modalityName} de este bloque. Las reservas existentes serán canceladas.`,
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          await slotsApi.delete(slotId);
+          playCancelSound();
+          showToast(`Modalidad ${modalityName} eliminada`);
+          await fetchSlots();
+        } catch (error: any) {
+          showToast(error.message || 'Error', 'error');
+        }
+      }
+    });
+  };
+
 
 
   const handleCreateManualSlot = async (e: React.FormEvent) => {
@@ -538,10 +590,43 @@ export function AdminDashboard({ onLogout }: any) {
                           
                           {isExpanded && (
                             <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-border">
-                              {/* Fuerza List */}
+                              {/* Fuerza Column */}
                               <div>
-                                <h4 className="text-xs font-bold uppercase text-primary mb-3">🏋️ Entre. Fuerza</h4>
-                                {!hasFuerza ? <p className="text-xs text-muted-foreground italic">No disponible</p> : (
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="text-xs font-bold uppercase text-primary">🏋️ Entre. Fuerza</h4>
+                                  <div className="flex items-center gap-1">
+                                    {hasFuerza ? (
+                                      <>
+                                        <button
+                                          onClick={() => handleToggleModality(block.fuerza.id)}
+                                          title={block.fuerza.is_blocked ? 'Activar modalidad' : 'Bloquear modalidad'}
+                                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-colors ${
+                                            block.fuerza.is_blocked
+                                              ? 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+                                              : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
+                                          }`}
+                                        >
+                                          {block.fuerza.is_blocked ? '🔓 Activar' : '🔒 Bloquear'}
+                                        </button>
+                                        <button
+                                          onClick={() => handleRemoveModality(block.fuerza.id, 'Fuerza')}
+                                          title="Eliminar modalidad Fuerza"
+                                          className="text-[10px] font-bold px-2 py-1 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                                        >
+                                          ✕ Quitar
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleAddModality(block, 'fuerza')}
+                                        className="text-[10px] font-bold px-2 py-1 rounded-lg border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
+                                      >
+                                        + Agregar
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                {!hasFuerza ? <p className="text-xs text-muted-foreground italic">No disponible</p> : block.fuerza.is_blocked ? <p className="text-xs text-amber-400/80 italic">🔒 Bloqueada — no aparece a clientes</p> : (
                                   <>
                                     {block.fuerza.bookings.length > 0 && (
                                       <ul className="space-y-2 mb-3">
@@ -559,10 +644,44 @@ export function AdminDashboard({ onLogout }: any) {
                                   </>
                                 )}
                               </div>
-                              {/* Personalizado List */}
+
+                              {/* Personalizado Column */}
                               <div>
-                                <h4 className="text-xs font-bold uppercase text-emerald-400 mb-3">🎯 Entre. Pers.</h4>
-                                {!hasPers ? <p className="text-xs text-muted-foreground italic">No disponible</p> : (
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="text-xs font-bold uppercase text-emerald-400">🎯 Entre. Pers.</h4>
+                                  <div className="flex items-center gap-1">
+                                    {hasPers ? (
+                                      <>
+                                        <button
+                                          onClick={() => handleToggleModality(block.personalizado.id)}
+                                          title={block.personalizado.is_blocked ? 'Activar modalidad' : 'Bloquear modalidad'}
+                                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-colors ${
+                                            block.personalizado.is_blocked
+                                              ? 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
+                                              : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
+                                          }`}
+                                        >
+                                          {block.personalizado.is_blocked ? '🔓 Activar' : '🔒 Bloquear'}
+                                        </button>
+                                        <button
+                                          onClick={() => handleRemoveModality(block.personalizado.id, 'Personalizado')}
+                                          title="Eliminar modalidad Personalizado"
+                                          className="text-[10px] font-bold px-2 py-1 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
+                                        >
+                                          ✕ Quitar
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleAddModality(block, 'personalizado')}
+                                        className="text-[10px] font-bold px-2 py-1 rounded-lg border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                                      >
+                                        + Agregar
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                                {!hasPers ? <p className="text-xs text-muted-foreground italic">No disponible</p> : block.personalizado.is_blocked ? <p className="text-xs text-amber-400/80 italic">🔒 Bloqueada — no aparece a clientes</p> : (
                                   <>
                                     {block.personalizado.bookings.length > 0 && (
                                       <ul className="space-y-2 mb-3">
