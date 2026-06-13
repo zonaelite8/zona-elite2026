@@ -140,7 +140,7 @@ export function AdminDashboard({ onLogout }: any) {
   const [showUserSelectModal, setShowUserSelectModal] = useState(false);
   const [showGlobalCreateUserModal, setShowGlobalCreateUserModal] = useState(false);
   const [userSelectData, setUserSelectData] = useState<{ slotId: number; modality: string } | null>(null);
-  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
   const [newUserData, setNewUserData] = useState({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo', payment_amount: 0, payment_date: '', expiration_date: '', payment_status: 'pendiente' });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -335,19 +335,20 @@ export function AdminDashboard({ onLogout }: any) {
     if (!userSelectData) return;
     setIsCreating(true);
     try {
-      let finalUserId = selectedUserId;
       if (isCreatingNewUser) {
         const { user } = await usersApi.create({ ...newUserData, role: 'client' });
-        finalUserId = user.id;
+        await bookingsApi.createAdmin(userSelectData.slotId, user.id);
+      } else {
+        if (selectedUserIds.length === 0) throw new Error("Debe seleccionar al menos un usuario");
+        await Promise.all(selectedUserIds.map(id => bookingsApi.createAdmin(userSelectData.slotId, id)));
       }
-      if (!finalUserId) throw new Error("Debe seleccionar o crear un usuario");
 
-      await bookingsApi.createAdmin(userSelectData.slotId, finalUserId);
-      showToast('¡Reserva manual creada con éxito!');
+      showToast(isCreatingNewUser || selectedUserIds.length === 1 ? '¡Reserva manual creada con éxito!' : `¡${selectedUserIds.length} reservas creadas con éxito!`);
       playSuccessSound();
       setShowUserSelectModal(false);
       setIsCreatingNewUser(false);
       setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo', payment_amount: 0, payment_date: '', expiration_date: '', payment_status: 'pendiente' });
+      setSelectedUserIds([]);
       await fetchSlots();
       await fetchUsers();
     } catch (error: any) {
@@ -656,7 +657,7 @@ export function AdminDashboard({ onLogout }: any) {
                                         ))}
                                       </ul>
                                     )}
-                                    <button onClick={() => { setUserSelectData({ slotId: block.fuerza.id, modality: 'Fuerza' }); setSelectedUserId(''); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} className="w-full border border-dashed border-primary/50 text-primary hover:bg-primary/10 transition-colors rounded-lg py-2 text-xs font-bold uppercase flex justify-center items-center gap-1">
+                                    <button onClick={() => { setUserSelectData({ slotId: block.fuerza.id, modality: 'Fuerza' }); setSelectedUserIds([]); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} className="w-full border border-dashed border-primary/50 text-primary hover:bg-primary/10 transition-colors rounded-lg py-2 text-xs font-bold uppercase flex justify-center items-center gap-1">
                                       <Plus size={14} /> Añadir Cliente / Usuario
                                     </button>
                                   </>
@@ -711,7 +712,7 @@ export function AdminDashboard({ onLogout }: any) {
                                         ))}
                                       </ul>
                                     )}
-                                    <button onClick={() => { setUserSelectData({ slotId: block.personalizado.id, modality: 'Personalizado' }); setSelectedUserId(''); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} className="w-full border border-dashed border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 transition-colors rounded-lg py-2 text-xs font-bold uppercase flex justify-center items-center gap-1">
+                                    <button onClick={() => { setUserSelectData({ slotId: block.personalizado.id, modality: 'Personalizado' }); setSelectedUserIds([]); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} className="w-full border border-dashed border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 transition-colors rounded-lg py-2 text-xs font-bold uppercase flex justify-center items-center gap-1">
                                       <Plus size={14} /> Añadir Cliente / Usuario
                                     </button>
                                   </>
@@ -950,15 +951,17 @@ export function AdminDashboard({ onLogout }: any) {
                     <tr className="border-b border-border uppercase tracking-wider text-muted-foreground font-semibold bg-secondary/30">
                       <th className="px-4 py-4">Nombre del Plan</th>
                       <th className="px-4 py-4">Clases por Defecto</th>
+                      <th className="px-4 py-4">Precio ($)</th>
                       <th className="px-4 py-4 text-center">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {plansList.length === 0 && <tr><td colSpan={3} className="p-10 text-center text-muted-foreground">No hay planes creados.</td></tr>}
+                    {plansList.length === 0 && <tr><td colSpan={4} className="p-10 text-center text-muted-foreground">No hay planes creados.</td></tr>}
                     {plansList.map((p) => (
                       <tr key={p.id} className="hover:bg-secondary/20 transition-colors">
                         <td className="px-4 py-4 font-bold">{p.name}</td>
-                        <td className="px-4 py-4 text-muted-foreground">{p.default_classes}</td>
+                        <td className="px-4 py-4 text-muted-foreground">{p.default_classes === 0 ? 'Ilimitado' : p.default_classes}</td>
+                        <td className="px-4 py-4 text-emerald-500 font-bold">${parseFloat(p.price || '0').toLocaleString()}</td>
                         <td className="px-4 py-4 text-center">
                           <button onClick={() => handleDeletePlan(p.id)} className="text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white p-2 rounded-lg transition-all" title="Eliminar Plan">
                             <Trash2 size={18} />
@@ -991,18 +994,30 @@ export function AdminDashboard({ onLogout }: any) {
 
               {!isCreatingNewUser ? (
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Seleccionar Cliente Existente</label>
-                  <select 
-                    required={!isCreatingNewUser}
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
-                    className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary text-foreground"
-                  >
-                    <option value="">-- Seleccione --</option>
-                    {usersList.map(u => (
-                      <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-                    ))}
-                  </select>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Seleccionar Clientes ({selectedUserIds.length} seleccionados)</label>
+                  <div className="bg-background border border-border rounded-xl max-h-[200px] overflow-y-auto p-2 space-y-1">
+                    {usersList.length === 0 && <p className="text-sm text-muted-foreground p-3">No hay clientes registrados.</p>}
+                    {usersList.map(u => {
+                      const isSelected = selectedUserIds.includes(u.id);
+                      return (
+                        <label key={u.id} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors border ${isSelected ? 'bg-primary/10 border-primary/30' : 'bg-transparent border-transparent hover:bg-secondary/50'}`}>
+                          <input 
+                            type="checkbox" 
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedUserIds(prev => [...prev, u.id]);
+                              else setSelectedUserIds(prev => prev.filter(id => id !== u.id));
+                            }}
+                            className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
+                          />
+                          <div className="flex flex-col">
+                            <span className="text-sm font-bold text-foreground">{u.name}</span>
+                            <span className="text-xs text-muted-foreground">{u.plan_type} • {u.available_classes} clases disp.</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -1081,7 +1096,7 @@ export function AdminDashboard({ onLogout }: any) {
                 </div>
               )}
 
-              <button type="submit" disabled={isCreating || (!isCreatingNewUser && !selectedUserId)} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2">
+              <button type="submit" disabled={isCreating || (!isCreatingNewUser && selectedUserIds.length === 0)} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2">
                 {isCreating ? 'Guardando...' : 'Asignar Cupo'}
               </button>
             </form>
@@ -1330,6 +1345,17 @@ export function AdminDashboard({ onLogout }: any) {
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-primary"
                   value={newPlan.default_classes}
                   onChange={e => setNewPlan(s => ({ ...s, default_classes: parseInt(e.target.value) || 0 }))}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1.5">Precio ($)</label>
+                <input 
+                  type="number" 
+                  min="0"
+                  className="w-full bg-background border border-border rounded-xl px-4 py-3 font-semibold focus:outline-none focus:border-primary"
+                  value={newPlan.price}
+                  onChange={e => setNewPlan(s => ({ ...s, price: parseFloat(e.target.value) || 0 }))}
+                  placeholder="Ej: 170000"
                 />
               </div>
               <button type="submit" disabled={isCreating} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2">

@@ -1,8 +1,9 @@
 // src/components/AuthView.tsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Lock, Mail, User, ArrowLeft } from 'lucide-react'
 import { ZonaEliteLogo } from '@/components/Logo'
 import { authApi } from '@/api/auth'
+import { plansApi, Plan } from '@/api/plans'
 import type { ViewState } from '@/types'
 
 // Google login removed per user request
@@ -24,8 +25,19 @@ export function AuthView({ onNavigate, onLogin }: Props) {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<React.ReactNode>('')
   const [loading, setLoading] = useState(false)
+  const [dbPlans, setDbPlans] = useState<Plan[]>([])
 
-
+  useEffect(() => {
+    if (mode === 'register' && dbPlans.length === 0) {
+      plansApi.getAll().then(plans => {
+        const activePlans = plans.filter(p => p.is_active);
+        setDbPlans(activePlans);
+        if (activePlans.length > 0) {
+          setPlanType(activePlans[0].name);
+        }
+      }).catch(console.error);
+    }
+  }, [mode, dbPlans.length]);
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     await submit(() => authApi.login(email, password))
@@ -176,10 +188,12 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                     onChange={e => setPlanType(e.target.value)}
                     className="form-input w-full bg-background border border-border rounded-lg px-4 py-3"
                   >
-                    <option value="Entrenamiento Funcional - Plan Básico">Fuerza Básico (3 días/sem) - $170.000</option>
-                    <option value="Entrenamiento Funcional - Plan Avanzado">Fuerza Avanzado (5 días/sem) - $230.000</option>
-                    <option value="Plan Élite Básico (Deportistas)">Élite Básico (1 día/sem) - $160.000</option>
-                    <option value="Plan Élite Avanzado">Élite Avanzado (2 días/sem) - $280.000</option>
+                    {dbPlans.length === 0 && <option value="Cargando planes...">Cargando planes...</option>}
+                    {dbPlans.map(plan => (
+                      <option key={plan.id} value={plan.name}>
+                        {plan.name} {plan.price && parseFloat(plan.price) > 0 ? `- $${parseFloat(plan.price).toLocaleString()}` : ''}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 mt-2">
