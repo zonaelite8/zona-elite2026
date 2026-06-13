@@ -5,9 +5,7 @@ import { ZonaEliteLogo } from '@/components/Logo'
 import { authApi } from '@/api/auth'
 import type { ViewState } from '@/types'
 
-import { GoogleLogin } from '@react-oauth/google'
-
-// Remove global google interface since we use @react-oauth/google
+// Google login removed per user request
 
 type AuthMode = 'login' | 'register' | 'recover' | 'verify'
 
@@ -27,15 +25,6 @@ export function AuthView({ onNavigate, onLogin }: Props) {
   const [success, setSuccess] = useState<React.ReactNode>('')
   const [loading, setLoading] = useState(false)
 
-  async function handleGoogleSuccess(credentialResponse: any) {
-    if (credentialResponse.credential) {
-      await submit(() => authApi.googleLogin(credentialResponse.credential))
-    }
-  }
-
-  function handleGoogleError() {
-    setError('Error al conectar con Google')
-  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -158,24 +147,6 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                 </button>
               </form>
 
-              {/* Google divider */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 border-t border-border" />
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">o continuar con</span>
-                  <div className="flex-1 border-t border-border" />
-                </div>
-                <div className="flex justify-center mt-4">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    theme="outline"
-                    size="large"
-                    text="signin_with"
-                    width="380px"
-                  />
-                </div>
-              </div>
 
               <p className="text-center text-sm text-muted-foreground">
                 ¿No tienes cuenta?{' '}
@@ -216,24 +187,6 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                 </button>
               </form>
 
-              {/* Google divider */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 border-t border-border" />
-                  <span className="text-xs text-muted-foreground uppercase tracking-wider">o continuar con</span>
-                  <div className="flex-1 border-t border-border" />
-                </div>
-                <div className="flex justify-center mt-4">
-                  <GoogleLogin
-                    onSuccess={handleGoogleSuccess}
-                    onError={handleGoogleError}
-                    theme="outline"
-                    size="large"
-                    text="signup_with"
-                    width="380px"
-                  />
-                </div>
-              </div>
 
               <p className="text-center text-sm text-muted-foreground">
                 ¿Ya tienes cuenta?{' '}
