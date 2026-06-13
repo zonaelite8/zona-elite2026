@@ -347,7 +347,7 @@ export function AdminDashboard({ onLogout }: any) {
       playSuccessSound();
       setShowUserSelectModal(false);
       setIsCreatingNewUser(false);
-      setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo' });
+      setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo', payment_amount: 0, payment_date: '', expiration_date: '', payment_status: 'pendiente' });
       await fetchSlots();
       await fetchUsers();
     } catch (error: any) {
