@@ -138,6 +138,7 @@ export function AdminDashboard({ onLogout }: any) {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [newPlan, setNewPlan] = useState({ name: '', default_classes: 0, price: 0 });
   const [showUserSelectModal, setShowUserSelectModal] = useState(false);
+  const [showGlobalCreateUserModal, setShowGlobalCreateUserModal] = useState(false);
   const [userSelectData, setUserSelectData] = useState<{ slotId: number; modality: string } | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
@@ -351,6 +352,23 @@ export function AdminDashboard({ onLogout }: any) {
       await fetchUsers();
     } catch (error: any) {
       showToast(error.response?.data?.error || error.message || 'Error al crear reserva', 'error');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleGlobalCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      await usersApi.create({ ...newUserData, role: 'client' });
+      showToast('¡Usuario creado con éxito!');
+      playSuccessSound();
+      setShowGlobalCreateUserModal(false);
+      setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo' });
+      await fetchUsers();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || error.message || 'Error al crear usuario', 'error');
     } finally {
       setIsCreating(false);
     }
@@ -782,7 +800,18 @@ export function AdminDashboard({ onLogout }: any) {
           {/* TAB USUARIOS */}
           {activeTab === 'usuarios' && (
             <div className="max-w-6xl mx-auto space-y-6">
-              <h3 className="text-xl font-heading font-bold uppercase mb-4">Usuarios ({usersList.length})</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-heading font-bold uppercase">Usuarios ({usersList.length})</h3>
+                <button 
+                  onClick={() => {
+                    setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo' });
+                    setShowGlobalCreateUserModal(true);
+                  }} 
+                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-xl font-bold hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                >
+                  <Plus size={18} /> Añadir Cliente
+                </button>
+              </div>
               <div className="bg-card border border-border rounded-2xl overflow-hidden w-full">
                 <table className="w-full text-left border-collapse table-fixed text-[9px] sm:text-[10px] lg:text-sm">
                   <thead>
@@ -988,6 +1017,69 @@ export function AdminDashboard({ onLogout }: any) {
 
               <button type="submit" disabled={isCreating || (!isCreatingNewUser && !selectedUserId)} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2">
                 {isCreating ? 'Guardando...' : 'Asignar Cupo'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AGREGAR CLIENTE GLOBAL */}
+      {showGlobalCreateUserModal && (
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowGlobalCreateUserModal(false); }}>
+          <div className="bg-card border border-border rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-border flex justify-between items-center bg-secondary/30">
+              <h3 className="font-heading font-bold uppercase text-base">Crear Nuevo Cliente</h3>
+              <button type="button" onClick={() => setShowGlobalCreateUserModal(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-secondary"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleGlobalCreateUser} className="p-5 space-y-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Nombre Completo</label>
+                  <input type="text" required value={newUserData.name} onChange={e => setNewUserData({...newUserData, name: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="Ej: Juan Pérez" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Correo Electrónico</label>
+                  <input type="email" required value={newUserData.email} onChange={e => setNewUserData({...newUserData, email: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="ejemplo@correo.com" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Teléfono (Opc.)</label>
+                    <input type="tel" value={newUserData.phone} onChange={e => setNewUserData({...newUserData, phone: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="3000000000" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Cédula (Opc.)</label>
+                    <input type="text" value={newUserData.cedula} onChange={e => setNewUserData({...newUserData, cedula: e.target.value})} className="w-full bg-background border border-border rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary" placeholder="10000000" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Plan</label>
+                    <select 
+                      value={newUserData.plan_type} 
+                      onChange={e => setNewUserData({...newUserData, plan_type: e.target.value})} 
+                      className="w-full bg-background border border-border rounded-xl px-2 py-2.5 text-xs focus:outline-none focus:border-primary"
+                    >
+                      {plansList.map(p => (
+                        <option key={p.id} value={p.name}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-1">Método de Pago</label>
+                    <select 
+                      value={newUserData.payment_method} 
+                      onChange={e => setNewUserData({...newUserData, payment_method: e.target.value})} 
+                      className="w-full bg-background border border-border rounded-xl px-2 py-2.5 text-xs focus:outline-none focus:border-primary"
+                    >
+                      <option value="efectivo">Efectivo</option>
+                      <option value="qr">QR</option>
+                      <option value="transferencia">Transferencia</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <button type="submit" disabled={isCreating} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed mt-2">
+                {isCreating ? 'Guardando...' : 'Crear Cliente'}
               </button>
             </form>
           </div>
