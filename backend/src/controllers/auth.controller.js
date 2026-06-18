@@ -287,7 +287,7 @@ const forgotPassword = async (req, res) => {
     return res.json({ message: 'Se ha enviado un correo con las instrucciones para restablecer tu contraseña.' });
   } catch (error) {
     console.error('Error in forgotPassword:', error);
-    return res.status(500).json({ error: 'Error interno del servidor.' });
+    return res.status(500).json({ error: 'Error interno: ' + (error.message || String(error)) });
   }
 };
 
@@ -324,7 +324,7 @@ const resetPassword = async (req, res) => {
     return res.json({ message: 'Tu contraseña ha sido restablecida exitosamente.' });
   } catch (error) {
     console.error('Error in resetPassword:', error);
-    return res.status(500).json({ error: 'Error interno del servidor.' });
+    return res.status(500).json({ error: 'Error interno: ' + (error.message || String(error)) });
   }
 };
 
