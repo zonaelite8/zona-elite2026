@@ -38,19 +38,26 @@ app.get('/api/check-config', (req, res) => {
   });
 });
 
-// Diagnostic: actually send a test email via Resend API
 app.get('/api/test-email', async (req, res) => {
   try {
-    const { sendEmail } = require('./services/email.service');
-    const result = await sendEmail(
-      'zonaelite8@gmail.com',
-      'Test desde Render - Zona Elite',
-      'Si recibes este correo, el sistema funciona.',
-      '<h2>Prueba Exitosa</h2><p>Render puede enviar correos via Resend.</p>'
-    );
-    res.json({ success: result, message: result ? 'Correo enviado exitosamente' : 'Falló el envío' });
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      requireTLS: true,
+      auth: {
+        user: process.env.EMAIL_USER || 'zonaelite8@gmail.com',
+        pass: process.env.EMAIL_PASS || 'bbiljzqpincehysh'
+      },
+      connectionTimeout: 10000
+    });
+    
+    await transporter.verify();
+    
+    res.json({ success: true, message: 'SMTP credentials verified successfully' });
   } catch (error) {
-    res.json({ success: false, error: error.message });
+    res.json({ success: false, error: error.message || String(error) });
   }
 });
 
