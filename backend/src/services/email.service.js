@@ -15,11 +15,17 @@ if (emailUser && emailPass) {
   const isGmail = emailUser.toLowerCase().endsWith('@gmail.com');
   const transportConfig = isGmail 
     ? {
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false, // true for 465, false for other ports
+        requireTLS: true,
         auth: {
           user: emailUser,
           pass: emailPass
-        }
+        },
+        connectionTimeout: 10000, // 10 segundos max
+        greetingTimeout: 10000,
+        socketTimeout: 15000
       }
     : {
         host: process.env.EMAIL_HOST || 'smtp.gmail.com',
@@ -40,11 +46,17 @@ if (emailUser && emailPass) {
   activeUser = 'zonaelite8@gmail.com';
   console.log('[Email Service] No credentials in env. Using default Gmail fallback configuration.');
   transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: {
       user: 'zonaelite8@gmail.com',
       pass: 'bbiljzqpincehysh'
-    }
+    },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
 }
 
