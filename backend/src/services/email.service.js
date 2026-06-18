@@ -83,10 +83,9 @@ const sendEmail = async (to, subject, text, html) => {
       return true;
     } else if (resend) {
       const { data, error } = await resend.emails.send({
-        from: 'Zona Elite <info@zonaelitemarinilla.com>',
-        to: [to],
-        subject,
-        text,
+        from: process.env.RESEND_FROM_EMAIL || 'Zona Elite <info@zonaelitemarinilla.com>',
+        to: Array.isArray(to) ? to : [to],
+        subject: subject,
         html: html || text
       });
 
