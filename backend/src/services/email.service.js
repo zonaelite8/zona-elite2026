@@ -70,16 +70,26 @@ if (emailUser && emailPass) {
 const sendEmail = async (to, subject, text, html) => {
   try {
     if (transporter) {
-      const mailOptions = {
-        from: `"Zona Élite" <${activeUser}>`,
-        to,
-        subject,
-        text,
-        html: html || text
-      };
+      console.log(`[Email Service] Delegando correo a la API de Vercel (evita bloqueo de Render) para: ${to}`);
       
-      const info = await transporter.sendMail(mailOptions);
-      console.log(`[Email Service] Correo enviado a ${to} via Nodemailer: ${info.messageId}`);
+      // Node 18+ has global fetch. Using native fetch to call Vercel Serverless Function
+      const response = await fetch('https://zonaelitemarinilla.com/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          to: Array.isArray(to) ? to : [to], 
+          subject, 
+          html: html || text 
+        })
+      });
+      
+      const data = await response.json().catch(() => ({}));
+      
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || `Error HTTP ${response.status} desde Vercel`);
+      }
+      
+      console.log(`[Email Service] Correo enviado a ${to} via Vercel API exitosamente`);
       return true;
     } else if (resend) {
       const { data, error } = await resend.emails.send({
@@ -90,7 +100,7 @@ const sendEmail = async (to, subject, text, html) => {
       });
 
       if (error) {
-        console.error(`[Email Service] Error al enviar correo via Resend a ${to}:`, error);
+        console.error(`[Email Service] Error de Resend para ${to}:`, error);
         return false;
       }
 
@@ -102,7 +112,7 @@ const sendEmail = async (to, subject, text, html) => {
     }
   } catch (error) {
     console.error(`[Email Service] Error al enviar correo a ${to}:`, error);
-    return false;
+    return { success: false, error: error.message };
   }
 };
 
