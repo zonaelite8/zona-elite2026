@@ -6,7 +6,7 @@
     },
     {
       "source": "/api/:path*",
-      "destination": "https://zona-elite-backend.onrender.com/api/:path*"
+      "destination": "https://zona-elite2026.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
