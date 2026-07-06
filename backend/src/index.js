@@ -105,19 +105,25 @@ app.use('/api/admin/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/plans', planRoutes);
 
-// Global Error Handler
+// Global Error Handler - log full error for debugging
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong on the server!' });
+  console.error('Global error:', err.message, err.stack);
+  res.status(500).json({ error: 'Something went wrong on the server!', detail: err.message });
 });
 
-// Start listening
-app.listen(PORT, async () => {
+// Start listening IMMEDIATELY - don't wait for DB migrations
+app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  try {
-    await initializeDatabaseAndAdmin(false);
-    console.log('Database migrated & admin verified successfully at startup.');
-  } catch (error) {
-    console.error('Database migration failed at startup:', error);
-  }
+  
+  // Run migrations in background — failures won't crash the server
+  setTimeout(async () => {
+    try {
+      await initializeDatabaseAndAdmin(false);
+      console.log('Database migrated & admin verified successfully at startup.');
+    } catch (error) {
+      console.error('Database migration failed at startup:', error.message);
+      // Don't crash — server stays up, migrations can be retried via /api/setup
+    }
+  }, 2000); // 2 second delay to let the server fully boot first
 });
+
