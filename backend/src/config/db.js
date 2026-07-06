@@ -17,7 +17,7 @@ const pool = new Pool({
   ssl: (isProduction || isExternal) ? { rejectUnauthorized: false } : false,
   connectionTimeoutMillis: 15000, // Tiempo de espera para conectar
   idleTimeoutMillis: 30000, // Cerrar clientes inactivos
-  max: 10, // Límite de conexiones simultáneas
+  max: 2, // Límite de conexiones simultáneas ultra-bajo para evitar saturación en planes gratuitos
   keepAlive: true // Mantener conexión viva en entornos cloud
 });
 
