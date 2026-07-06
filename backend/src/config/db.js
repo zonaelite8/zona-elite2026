@@ -33,9 +33,22 @@ const isExternal = connectionString &&
   !connectionString.includes('localhost') &&
   !connectionString.includes('127.0.0.1');
 
+let isInternalRender = false;
+if (connectionString) {
+  try {
+    const hostMatch = connectionString.match(/@([^:/]+)/);
+    if (hostMatch) {
+      const host = hostMatch[1];
+      if (host.startsWith('dpg-') && !host.includes('.')) {
+        isInternalRender = true;
+      }
+    }
+  } catch(e) { /* ignore */ }
+}
+
 const pool = new Pool({
   connectionString,
-  ssl: isExternal ? { rejectUnauthorized: false } : false,
+  ssl: (isExternal && !isInternalRender) ? { rejectUnauthorized: false } : false,
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 60000,
   max: 5,
