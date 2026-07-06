@@ -114,6 +114,8 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
         CONSTRAINT unique_user_booking UNIQUE (user_id, slot_id)
       )
     `);
+    // Ensure cancel_token column exists (migration for existing DBs)
+    await client.query('ALTER TABLE bookings ADD COLUMN IF NOT EXISTS cancel_token VARCHAR(255)');
     console.log("Tabla 'bookings' verificada.");
 
     // 6. Crear tabla notifications

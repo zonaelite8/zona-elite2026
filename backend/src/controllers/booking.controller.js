@@ -99,7 +99,7 @@ const createBooking = async (req, res) => {
       const userName = user?.name || 'Un usuario';
       const userEmail = user?.email;
       
-      const dateStr = slot.date ? new Date(slot.date).toISOString().split('T')[0] : '';
+      const dateStr = slot.date ? String(slot.date).split('T')[0] : '';
       const timeStr = slot.start_time ? formatTo12Hour(slot.start_time.substring(0, 5)) : '';
       const modalityUpper = slot.modality.charAt(0).toUpperCase() + slot.modality.slice(1);
       
@@ -197,8 +197,8 @@ const createBooking = async (req, res) => {
       booking: result.rows[0]
     });
   } catch (error) {
-    console.error('Error creating booking:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error('Error creating booking:', error.message, error.code, error.detail);
+    return res.status(500).json({ error: 'Internal server error', detail: error.message });
   }
 };
 
@@ -290,7 +290,7 @@ const createAdminBooking = async (req, res) => {
       const userName = user?.name || 'Un usuario';
       const userEmail = user?.email;
       
-      const dateStr = slot.date ? new Date(slot.date).toISOString().split('T')[0] : '';
+      const dateStr = slot.date ? String(slot.date).split('T')[0] : '';
       const timeStr = slot.start_time ? formatTo12Hour(slot.start_time.substring(0, 5)) : '';
       const modalityUpper = slot.modality.charAt(0).toUpperCase() + slot.modality.slice(1);
       
@@ -400,7 +400,8 @@ const cancelBooking = async (req, res) => {
       );
       if (detailsQuery.rows.length > 0) {
         const { name, modality, date, start_time } = detailsQuery.rows[0];
-        const dateStr = date ? new Date(date).toISOString().split('T')[0] : '';
+        const dateStr = date ? String(date).split('T')[0] : '';
+
         const timeStr = start_time ? formatTo12Hour(start_time.substring(0, 5)) : '';
         const msg = `El usuario ${name} ha cancelado su reserva de entrenamiento ${modality} para el ${dateStr} a las ${timeStr}.`;
         
@@ -517,7 +518,7 @@ const cancelBookingByToken = async (req, res) => {
     await db.query('DELETE FROM bookings WHERE id = $1', [booking.id]);
 
     // Format strings for notification
-    const dateStr = new Date(booking.date).toISOString().split('T')[0];
+    const dateStr = String(booking.date).split('T')[0];
     const timeStr = formatTo12Hour(booking.start_time.substring(0, 5));
 
     // Notify admin

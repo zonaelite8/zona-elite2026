@@ -194,7 +194,8 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
       playSuccessSound();
       showToast('¡Reserva confirmada!');
       setBookingModal(null);
-      await fetchSlots();
+      // Reload both slots (availability) and reservations (history tab) immediately
+      await Promise.all([fetchSlots(), fetchReservations()]);
     } catch (error: any) {
       showToast(error.message || 'Error al realizar la reserva', 'error');
     } finally {
@@ -228,11 +229,12 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
     // Check if user already booked this exact time block
     let hasBookingInBlock = false;
     if (block) {
-      const blockDateStr = new Date(block.date).toISOString().split('T')[0];
+      const blockDateStr = String(block.date).split('T')[0];
       hasBookingInBlock = reservations.some(res => {
-        const resDateStr = new Date(res.date).toISOString().split('T')[0];
+        const resDateStr = String(res.date).split('T')[0];
         return resDateStr === blockDateStr && res.start_time.substring(0,5) === block.start_time.substring(0,5);
       });
+
     }
 
     if (hasBookingInBlock) {
@@ -460,8 +462,8 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                   <div key={res.booking_id} className="bg-card border border-border rounded-2xl p-5 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 rounded-xl bg-secondary flex flex-col items-center justify-center border border-border shrink-0">
-                        <span className="text-xs uppercase font-semibold text-muted-foreground">{format(new Date(res.date), 'eee', { locale: es })}</span>
-                        <span className="text-xl font-heading font-bold">{format(new Date(res.date), 'd')}</span>
+                        <span className="text-xs uppercase font-semibold text-muted-foreground">{format(new Date(res.date + 'T12:00:00'), 'eee', { locale: es })}</span>
+                        <span className="text-xl font-heading font-bold">{format(new Date(res.date + 'T12:00:00'), 'd')}</span>
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
