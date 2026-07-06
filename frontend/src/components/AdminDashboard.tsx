@@ -120,6 +120,8 @@ export function AdminDashboard({ onLogout }: any) {
   const [calendarSlots, setCalendarSlots] = useState<any[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [usersList, setUsersList] = useState<User[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [usersError, setUsersError] = useState(false);
   const [plansList, setPlansList] = useState<Plan[]>([]);
   
   const [showNotifications, setShowNotifications] = useState(false);
@@ -173,11 +175,16 @@ export function AdminDashboard({ onLogout }: any) {
   };
 
   const fetchUsers = async () => {
+    setUsersLoading(true);
+    setUsersError(false);
     try {
       const data = await usersApi.getAll();
       setUsersList(data);
     } catch (error) {
-      console.error(error);
+      console.error('Error cargando usuarios:', error);
+      setUsersError(true);
+    } finally {
+      setUsersLoading(false);
     }
   };
 
@@ -830,7 +837,9 @@ export function AdminDashboard({ onLogout }: any) {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
-                    {usersList.length === 0 && <tr><td colSpan={10} className="p-10 text-center text-muted-foreground">Cargando...</td></tr>}
+                    {usersLoading && <tr><td colSpan={10} className="p-10 text-center text-muted-foreground">Cargando usuarios...</td></tr>}
+                    {!usersLoading && usersError && <tr><td colSpan={10} className="p-10 text-center text-red-400">⚠️ Error al cargar usuarios. Verifica que el servidor esté corriendo y recarga la página.</td></tr>}
+                    {!usersLoading && !usersError && usersList.length === 0 && <tr><td colSpan={10} className="p-10 text-center text-muted-foreground">No hay usuarios registrados.</td></tr>}
                     {usersList.map((u: User) => (
                       <tr key={u.id} className="hover:bg-secondary/20 transition-colors">
                         <td className="px-2 py-2 font-bold truncate" title={u.name}>{u.name}</td>

@@ -43,13 +43,13 @@ const pool = new Pool({
   idleTimeoutMillis: 60000,
   max: 5,
   allowExitOnIdle: false
-});
-
-// Log connections pero NO matar el proceso en errores de clientes inactivos
-pool.on('connect', () => {
+});// Log connections y forzar search_path a 'public' para compatibilidad con poolers (PgBouncer)
+pool.on('connect', (client) => {
   console.log('Connected to the PostgreSQL database successfully.');
+  client.query('SET search_path TO public;').catch(err => {
+    console.error('Error setting search_path on connect:', err.message);
+  });
 });
-
 pool.on('error', (err) => {
   console.error('Idle client error (non-fatal):', err.message);
   // NO process.exit() aqui — dejamos que el pool se recupere solo

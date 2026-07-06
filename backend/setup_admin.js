@@ -10,6 +10,7 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     try {
       client = await db.connect();
       console.log("Conectado a la base de datos. Iniciando inicialización...");
+      await client.query('SET search_path TO public;');
       break;
     } catch (err) {
       retries--;
