@@ -23,7 +23,7 @@ app.use(express.json());
 
 // Check server status
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly' });
+  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '1.0.4' });
 });
 
 // Diagnostic: check email config (instant, no sending)
