@@ -3,15 +3,17 @@ const db = require('./src/config/db');
 const bcrypt = require('bcryptjs');
 
 async function initializeDatabaseAndAdmin(shouldExit = true) {
+  let client;
   try {
+    client = await db.connect();
     console.log("Iniciando inicialización de la base de datos...");
 
     // 1. Crear extension UUID
-    await db.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+    await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
     console.log("Extension 'uuid-ossp' habilitada.");
 
     // 2. Crear tabla plans
-    await db.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS plans (
         id SERIAL PRIMARY KEY,
         name VARCHAR(100) UNIQUE NOT NULL,
@@ -24,7 +26,7 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     console.log("Tabla 'plans' verificada.");
 
     // 3. Crear tabla users
-    await db.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         name VARCHAR(100) NOT NULL,
@@ -39,23 +41,23 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
     `);
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS available_classes INT DEFAULT 0');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cedula VARCHAR(50)');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_type VARCHAR(100) DEFAULT \'Sin Plan\'');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20) DEFAULT \'efectivo\'');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_amount DECIMAL(10, 2) DEFAULT 0');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_date DATE');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS expiration_date DATE');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT \'pendiente\'');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token VARCHAR(255)');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255)');
-    await db.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP WITH TIME ZONE');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS available_classes INT DEFAULT 0');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(20)');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cedula VARCHAR(50)');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS plan_type VARCHAR(100) DEFAULT \'Sin Plan\'');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_method VARCHAR(20) DEFAULT \'efectivo\'');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_amount DECIMAL(10, 2) DEFAULT 0');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_date DATE');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS expiration_date DATE');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT \'pendiente\'');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS verify_token VARCHAR(255)');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255)');
+    await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMP WITH TIME ZONE');
     console.log("Tabla 'users' verificada.");
 
     // 3. Crear tabla slots
-    await db.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS slots (
         id SERIAL PRIMARY KEY,
         modality VARCHAR(50) NOT NULL CHECK (modality IN ('fuerza', 'personalizado')),
@@ -68,11 +70,11 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
         CONSTRAINT unique_slot_time UNIQUE (modality, date, start_time)
       )
     `);
-    await db.query('ALTER TABLE slots ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE');
+    await client.query('ALTER TABLE slots ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE');
     console.log("Tabla 'slots' verificada.");
 
     // 4. Crear tabla bookings
-    await db.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS bookings (
         id SERIAL PRIMARY KEY,
         user_id UUID REFERENCES users(id) ON DELETE CASCADE,
@@ -86,7 +88,7 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     console.log("Tabla 'bookings' verificada.");
 
     // 5. Crear tabla notifications
-    await db.query(`
+    await client.query(`
       CREATE TABLE IF NOT EXISTS notifications (
         id SERIAL PRIMARY KEY,
         message TEXT NOT NULL,
@@ -98,24 +100,24 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     console.log("Tabla 'notifications' verificada.");
 
     // 6. Crear índices
-    await db.query('CREATE INDEX IF NOT EXISTS idx_slots_date ON slots(date)');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id)');
-    await db.query('CREATE INDEX IF NOT EXISTS idx_bookings_slot ON bookings(slot_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_slots_date ON slots(date)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id)');
+    await client.query('CREATE INDEX IF NOT EXISTS idx_bookings_slot ON bookings(slot_id)');
     console.log("Índices verificados.");
 
     // 7. Insertar/Actualizar Administrador
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash('Zonaelite2026.', salt);
 
-    const adminCheck = await db.query("SELECT id FROM users WHERE email = 'zonaelite8@gmail.com'");
+    const adminCheck = await client.query("SELECT id FROM users WHERE email = 'zonaelite8@gmail.com'");
     if (adminCheck.rows.length === 0) {
-      await db.query(
+      await client.query(
         "INSERT INTO users (name, email, password_hash, role, is_verified) VALUES ($1, $2, $3, $4, true)",
         ['Administrador', 'zonaelite8@gmail.com', hash, 'admin']
       );
       console.log("✅ Usuario administrador creado: zonaelite8@gmail.com / Zonaelite2026.");
     } else {
-      await db.query(
+      await client.query(
         "UPDATE users SET password_hash = $1, is_verified = true WHERE email = 'zonaelite8@gmail.com'",
         [hash]
       );
@@ -123,10 +125,10 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     }
 
     // 8. Seed de planes por defecto
-    await db.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS description TEXT');
-    await db.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS classes_per_week INT DEFAULT 0');
-    await db.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS sessions_per_month INT DEFAULT 0');
-    await db.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS modality_type VARCHAR(50) DEFAULT \'funcional\'');
+    await client.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS description TEXT');
+    await client.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS classes_per_week INT DEFAULT 0');
+    await client.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS sessions_per_month INT DEFAULT 0');
+    await client.query('ALTER TABLE plans ADD COLUMN IF NOT EXISTS modality_type VARCHAR(50) DEFAULT \'funcional\'');
     
     const officialPlans = [
       ['Entrenamiento Funcional - Plan Básico', 'Entrenamiento semipersonalizado con máximo 5 personas.', 3, 12, 'funcional', 12, 170000, true],
@@ -136,7 +138,7 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     ];
 
     for (const p of officialPlans) {
-      await db.query(`
+      await client.query(`
         INSERT INTO plans (name, description, classes_per_week, sessions_per_month, modality_type, default_classes, price, is_active)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (name) DO UPDATE SET price = EXCLUDED.price
@@ -145,10 +147,10 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     console.log("Planes oficiales verificados e insertados/actualizados.");
 
     // 9. Seed de slots por defecto si la tabla está vacía
-    const slotsCountQuery = await db.query('SELECT COUNT(*) FROM slots');
+    const slotsCountQuery = await client.query('SELECT COUNT(*) FROM slots');
     const slotsCount = parseInt(slotsCountQuery.rows[0].count, 10);
     if (slotsCount === 0) {
-      await db.query(`
+      await client.query(`
         INSERT INTO slots (modality, date, start_time, end_time, capacity)
         VALUES 
         ('fuerza', CURRENT_DATE, '08:00:00', '09:00:00', 5),
@@ -160,9 +162,11 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     }
 
     console.log("🎉 Inicialización de base de datos completada exitosamente.");
+    if (client) client.release();
     if (shouldExit) process.exit(0);
     return "Base de datos inicializada y administrador creado/actualizado con éxito.";
   } catch (error) {
+    if (client) client.release();
     console.error("❌ Error inicializando base de datos y administrador:", error);
     if (shouldExit) process.exit(1);
     throw error;

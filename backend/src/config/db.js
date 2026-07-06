@@ -5,7 +5,11 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: isProduction ? { rejectUnauthorized: false } : false
+  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 15000, // Tiempo de espera para conectar
+  idleTimeoutMillis: 30000, // Cerrar clientes inactivos
+  max: 10, // Límite de conexiones simultáneas
+  keepAlive: true // Mantener conexión viva en entornos cloud
 });
 
 pool.on('connect', () => {
