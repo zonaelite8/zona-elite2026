@@ -8,8 +8,14 @@ if (connectionString && connectionString.includes('supabase.co') && connectionSt
   connectionString = connectionString.replace(':6543', ':5432');
 }
 
-// Render fix: el hostname interno "dpg-xxx" solo resuelve dentro de la red interna de Render.
-// Si existe EXTERNAL_DATABASE_URL, usarla como respaldo.
+// Fix critico: el hostname interno de Render "dpg-d8h4mva8pkls73bvm980-a" no resuelve DNS.
+// Reemplazamos con la URL externa correcta de la base de datos.
+if (connectionString && connectionString.includes('dpg-d8h4mva8pkls73bvm980-a')) {
+  console.log('⚠️ Auto-fix: Reemplazando hostname interno de Render con URL externa correcta.');
+  connectionString = 'postgresql://admin:NiwDbgoKmMIOQrwlAyw1NuORFCWQqJCY@dpg-d8d748f40ujc73cc9it0-a.ohio-postgres.render.com/zona_elite';
+}
+
+// Render fix: Si existe EXTERNAL_DATABASE_URL, usarla como respaldo.
 if (connectionString) {
   try {
     const hostMatch = connectionString.match(/@([^:/]+)/);
