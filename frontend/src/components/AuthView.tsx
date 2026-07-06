@@ -196,20 +196,54 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                 <Field label="Nombre Completo" type="text" value={name} onChange={setName} placeholder="Tu nombre" />
                 <Field label="Correo" type="email" value={email} onChange={setEmail} placeholder="atleta@ejemplo.com" />
                 <Field label="Contraseña" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium">Plan de Entrenamiento</label>
-                  <select 
-                    value={planType}
-                    onChange={e => setPlanType(e.target.value)}
-                    className="form-input w-full bg-background border border-border rounded-lg px-4 py-3"
-                  >
-                    {dbPlans.length === 0 && <option value="Cargando planes...">Cargando planes...</option>}
-                    {dbPlans.map(plan => (
-                      <option key={plan.id} value={plan.name}>
-                        {plan.name} {plan.price && parseFloat(plan.price) > 0 ? `- $${parseFloat(plan.price).toLocaleString('es-CO')}` : ''}
-                      </option>
-                    ))}
-                  </select>
+                 <div className="space-y-2">
+                  <label className="text-sm font-medium block">Plan de Entrenamiento</label>
+                  <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                    {dbPlans.length === 0 && (
+                      <p className="text-xs text-muted-foreground italic py-2">Cargando planes disponibles...</p>
+                    )}
+                    {dbPlans.map(plan => {
+                      const isSelected = planType === plan.name;
+                      const planPrice = plan.price && parseFloat(plan.price) > 0 
+                        ? `$${parseFloat(plan.price).toLocaleString('es-CO')}` 
+                        : 'A convenir';
+                      
+                      return (
+                        <div 
+                          key={plan.id}
+                          onClick={() => setPlanType(plan.name)}
+                          className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col gap-1 select-none relative ${
+                            isSelected 
+                              ? 'border-primary bg-primary/10 shadow-sm' 
+                              : 'border-border bg-card hover:border-border/80'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold uppercase tracking-wider text-foreground">{plan.name}</span>
+                            <span className="text-xs font-heading font-extrabold text-primary">{planPrice}</span>
+                          </div>
+                          
+                          {plan.default_classes > 0 && (
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-medium">
+                              💪 Incluye {plan.default_classes} clases / mes
+                            </span>
+                          )}
+                          
+                          {(plan as any).description && (
+                            <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">
+                              {(plan as any).description}
+                            </p>
+                          )}
+
+                          {isSelected && (
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-[10px] font-bold">
+                              ✓
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
                 <button type="submit" disabled={loading} className="btn-primary w-full py-3.5 mt-2">
                   {loading ? 'Creando cuenta…' : 'Crear Cuenta'}
