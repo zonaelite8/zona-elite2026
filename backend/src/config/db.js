@@ -1,11 +1,20 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+let connectionString = process.env.DATABASE_URL;
+
+// Auto-fix para el pooler de Supabase (puerto 6543) que interrumpe migraciones
+if (connectionString && connectionString.includes('supabase.co') && connectionString.includes(':6543')) {
+  console.log("⚠️ Detectada conexión de Supabase en puerto de pooling (6543). Redirigiendo automáticamente al puerto directo (5432) para evitar desconexiones.");
+  connectionString = connectionString.replace(':6543', ':5432');
+}
+
 const isProduction = process.env.NODE_ENV === 'production';
+const isExternal = connectionString && !connectionString.includes('localhost') && !connectionString.includes('127.0.0.1');
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  connectionString,
+  ssl: (isProduction || isExternal) ? { rejectUnauthorized: false } : false,
   connectionTimeoutMillis: 15000, // Tiempo de espera para conectar
   idleTimeoutMillis: 30000, // Cerrar clientes inactivos
   max: 10, // Límite de conexiones simultáneas
