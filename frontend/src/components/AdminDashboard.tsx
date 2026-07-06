@@ -1210,116 +1210,154 @@ export function AdminDashboard({ onLogout }: any) {
           <div className="bg-card border border-border rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl">
             <div className="p-5 border-b border-border flex justify-between items-center bg-secondary/30">
               <div>
-                <h3 className="font-heading font-bold uppercase text-base">Añadir Horarios</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Selecciona varios días y varios rangos de hora</p>
+                <h3 className="font-heading font-bold uppercase text-base">📅 Programar Clases</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Asigna múltiples días y horas en segundos</p>
               </div>
               <button type="button" onClick={() => setShowManualModal(false)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-secondary"><X size={20} /></button>
             </div>
-            <form onSubmit={handleCreateManualSlot} className="p-5 space-y-5 max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleCreateManualSlot} className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
 
               {/* MODALIDADES */}
               <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Modalidades</label>
-                <div className="flex items-center gap-6 bg-secondary/20 p-3.5 rounded-xl border border-border">
-                  <label className="flex items-center gap-2.5 text-sm font-semibold cursor-pointer select-none">
-                    <input type="checkbox" checked={createFuerza} onChange={e => setCreateFuerza(e.target.checked)} className="rounded border-border text-primary focus:ring-primary h-4 w-4 bg-background accent-primary" /> 🏋️ Fuerza
-                  </label>
-                  <label className="flex items-center gap-2.5 text-sm font-semibold cursor-pointer select-none">
-                    <input type="checkbox" checked={createPersonalizado} onChange={e => setCreatePersonalizado(e.target.checked)} className="rounded border-border text-primary focus:ring-primary h-4 w-4 bg-background accent-primary" /> 🎯 Personalizado
-                  </label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block mb-2">1. Seleccionar Modalidades</label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div 
+                    onClick={() => setCreateFuerza(!createFuerza)}
+                    className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 select-none ${
+                      createFuerza 
+                        ? 'border-primary bg-primary/10 text-foreground font-bold shadow-sm' 
+                        : 'border-border bg-card text-muted-foreground hover:border-border/80'
+                    }`}
+                  >
+                    <input type="checkbox" checked={createFuerza} onChange={() => {}} className="pointer-events-none rounded border-border text-primary h-4 w-4 bg-background accent-primary shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="text-sm">🏋️ Fuerza</span>
+                      <span className="text-[10px] opacity-75 font-normal">Capacidad máx: 5</span>
+                    </div>
+                  </div>
+                  <div 
+                    onClick={() => setCreatePersonalizado(!createPersonalizado)}
+                    className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all flex items-center gap-3 select-none ${
+                      createPersonalizado 
+                        ? 'border-emerald-500 bg-emerald-500/10 text-foreground font-bold shadow-sm' 
+                        : 'border-border bg-card text-muted-foreground hover:border-border/80'
+                    }`}
+                  >
+                    <input type="checkbox" checked={createPersonalizado} onChange={() => {}} className="pointer-events-none rounded border-border text-emerald-500 h-4 w-4 bg-background accent-emerald-500 shrink-0" />
+                    <div className="flex flex-col">
+                      <span className="text-sm">🎯 Personalizado</span>
+                      <span className="text-[10px] opacity-75 font-normal">Capacidad máx: 2</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* FECHAS */}
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">📅 Días ({selectedDates.length} seleccionado{selectedDates.length !== 1 ? 's' : ''})</label>
-                <div className="space-y-2">
-                  {selectedDates.map((d, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="flex-1 bg-secondary/20 border border-border rounded-xl px-4 py-2 text-sm font-semibold">
-                        {format(new Date(d + 'T00:00:00'), "EEEE dd 'de' MMMM yyyy", { locale: es })}
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                  2. Asignar Días ({selectedDates.length})
+                </label>
+                
+                {/* Lista de días seleccionados como badges horizontales */}
+                {selectedDates.length > 0 && (
+                  <div className="flex flex-wrap gap-2 p-3 bg-secondary/20 rounded-xl border border-border max-h-[120px] overflow-y-auto">
+                    {selectedDates.map((d, i) => (
+                      <div key={i} className="flex items-center gap-1.5 bg-primary/10 border border-primary/20 text-primary rounded-full pl-3 pr-2 py-1 text-xs font-semibold animate-in zoom-in-95 duration-150">
+                        <span className="capitalize">{format(new Date(d + 'T00:00:00'), "eee d 'de' MMM", { locale: es })}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setSelectedDates(prev => prev.filter((_, idx) => idx !== i))} 
+                          className="w-4 h-4 rounded-full bg-primary/20 hover:bg-red-500 hover:text-white flex items-center justify-center font-bold text-[10px] transition-colors"
+                        >
+                          ×
+                        </button>
                       </div>
-                      <button type="button" onClick={() => setSelectedDates(prev => prev.filter((_, idx) => idx !== i))} className="p-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"><X size={14} /></button>
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2">
-                    <CustomDatePicker
-                      selectedDate={tempDate}
-                      onChange={d => setTempDate(d)}
-                      className="flex-1 justify-between px-4 py-2.5 bg-background text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const dateStr = format(tempDate, 'yyyy-MM-dd');
-                        if (!selectedDates.includes(dateStr)) {
-                          setSelectedDates(prev => [...prev, dateStr].sort());
-                        }
-                      }}
-                      className="flex items-center gap-1 px-3 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold uppercase hover:bg-primary/90 transition-colors whitespace-nowrap"
-                    >
-                      <Plus size={13} /> Añadir
-                    </button>
+                    ))}
                   </div>
+                )}
+
+                <div className="flex items-center gap-2 bg-secondary/10 p-2 rounded-xl border border-border/65">
+                  <CustomDatePicker
+                    selectedDate={tempDate}
+                    onChange={d => setTempDate(d)}
+                    className="flex-1 justify-between px-3 py-2 bg-background border border-border/80 rounded-lg text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const dateStr = format(tempDate, 'yyyy-MM-dd');
+                      if (!selectedDates.includes(dateStr)) {
+                        setSelectedDates(prev => [...prev, dateStr].sort());
+                      }
+                    }}
+                    className="flex items-center gap-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold uppercase hover:bg-primary/95 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                  >
+                    <Plus size={13} /> Añadir Día
+                  </button>
                 </div>
               </div>
 
               {/* BLOQUES DE HORA */}
-              <div>
-                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">🕐 Horas de inicio <span className="normal-case font-normal text-muted-foreground/70">(cada clase dura 1 hora)</span></label>
-                <div className="space-y-2">
-                  {timeBlocks.map((tb, i) => (
-                    <div key={i} className="flex items-center gap-3 bg-secondary/10 border border-border rounded-xl px-3 py-2">
-                      <CustomTimePicker
-                        value={tb.start_time}
-                        onChange={t => {
-                          const [h, m] = t.split(':').map(Number);
-                          const endH = (h + 1) % 24;
-                          const endTime = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                          setTimeBlocks(prev => prev.map((b, idx) => idx === i ? { start_time: t, end_time: endTime } : b));
-                        }}
-                        className="flex-1 justify-center bg-background text-sm"
-                      />
-                      <span className="text-muted-foreground text-xs">→ <strong>{(() => { const [h,m] = tb.start_time.split(':').map(Number); const endH=(h+1)%24; return `${String(endH).padStart(2,'0')}:${String(m).padStart(2,'0')}`; })()}</strong></span>
-                      {timeBlocks.length > 1 && (
-                        <button type="button" onClick={() => setTimeBlocks(prev => prev.filter((_, idx) => idx !== i))} className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"><X size={14} /></button>
-                      )}
-                    </div>
-                  ))}
-                  <div className="flex items-center gap-2">
-                    <CustomTimePicker
-                      value={tempStartTime}
-                      onChange={t => setTempStartTime(t)}
-                      className="flex-1 justify-center bg-background text-sm"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const [h, m] = tempStartTime.split(':').map(Number);
-                        const endH = (h + 1) % 24;
-                        const endTime = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-                        const newBlock = { start_time: tempStartTime, end_time: endTime };
-                        if (!timeBlocks.find(b => b.start_time === tempStartTime)) {
-                          setTimeBlocks(prev => [...prev, newBlock].sort((a,b) => a.start_time.localeCompare(b.start_time)));
-                        }
-                      }}
-                      className="flex items-center gap-1 px-3 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-bold uppercase hover:bg-primary/90 transition-colors whitespace-nowrap"
-                    >
-                      <Plus size={13} /> Añadir
-                    </button>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">
+                  3. Asignar Franjas Horarias ({timeBlocks.length})
+                </label>
+                
+                {/* Lista de horas seleccionadas como badges horizontales */}
+                {timeBlocks.length > 0 && (
+                  <div className="flex flex-wrap gap-2 p-3 bg-secondary/20 rounded-xl border border-border max-h-[120px] overflow-y-auto">
+                    {timeBlocks.map((tb, i) => (
+                      <div key={i} className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full pl-3 pr-2 py-1 text-xs font-semibold animate-in zoom-in-95 duration-150">
+                        <span>{formatTo12Hour(tb.start_time)}</span>
+                        <button 
+                          type="button" 
+                          onClick={() => setTimeBlocks(prev => prev.filter((_, idx) => idx !== i))} 
+                          className="w-4 h-4 rounded-full bg-emerald-500/20 hover:bg-red-500 hover:text-white flex items-center justify-center font-bold text-[10px] transition-colors"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
                   </div>
+                )}
+
+                <div className="flex items-center gap-2 bg-secondary/10 p-2 rounded-xl border border-border/65">
+                  <CustomTimePicker
+                    value={tempStartTime}
+                    onChange={t => setTempStartTime(t)}
+                    className="flex-1 justify-center bg-background border border-border/80 rounded-lg text-xs py-2"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const [h, m] = tempStartTime.split(':').map(Number);
+                      const endH = (h + 1) % 24;
+                      const endTime = `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                      const newBlock = { start_time: tempStartTime, end_time: endTime };
+                      if (!timeBlocks.find(b => b.start_time === tempStartTime)) {
+                        setTimeBlocks(prev => [...prev, newBlock].sort((a,b) => a.start_time.localeCompare(b.start_time)));
+                      }
+                    }}
+                    className="flex items-center gap-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-bold uppercase hover:bg-primary/95 transition-all shadow-sm active:scale-95 whitespace-nowrap"
+                  >
+                    <Plus size={13} /> Añadir Hora
+                  </button>
                 </div>
+                <p className="text-[10px] text-muted-foreground pl-1">💡 Nota: Cada clase dura exactamente 1 hora desde su inicio.</p>
               </div>
 
               {/* RESUMEN */}
               {selectedDates.length > 0 && timeBlocks.length > 0 && (
-                <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 text-xs text-primary">
-                  <strong>Resumen:</strong> Se crearán hasta <strong>{selectedDates.length * timeBlocks.length}</strong> bloques de horario en {selectedDates.length} día{selectedDates.length !== 1 ? 's' : ''} con {timeBlocks.length} franja{timeBlocks.length !== 1 ? 's' : ''} horaria{timeBlocks.length !== 1 ? 's' : ''}.
+                <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 text-xs text-primary flex items-start gap-2 shadow-inner">
+                  <span className="shrink-0">📢</span>
+                  <div>
+                    <strong className="font-bold">Resumen de generación:</strong> Se crearán un total de <strong className="font-extrabold text-foreground bg-primary/20 px-1.5 py-0.5 rounded">{selectedDates.length * timeBlocks.length} horarios</strong> en los días y horas especificados.
+                  </div>
                 </div>
               )}
 
-              <button type="submit" disabled={isCreating || selectedDates.length === 0 || timeBlocks.length === 0} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-3.5 rounded-xl hover:bg-primary/90 transition-colors uppercase text-sm disabled:opacity-60 disabled:cursor-not-allowed">
-                {isCreating ? 'Creando...' : `Crear ${selectedDates.length * timeBlocks.length} Bloque${selectedDates.length * timeBlocks.length !== 1 ? 's' : ''}`}
+              <button type="submit" disabled={isCreating || selectedDates.length === 0 || timeBlocks.length === 0 || (!createFuerza && !createPersonalizado)} className="w-full bg-primary text-primary-foreground font-heading font-bold tracking-wider py-4 rounded-xl hover:bg-primary/90 transition-all uppercase text-xs shadow-lg shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.99] duration-150">
+                {isCreating ? 'Generando horarios...' : `✓ Generar ${selectedDates.length * timeBlocks.length} Clase${selectedDates.length * timeBlocks.length !== 1 ? 's' : ''}`}
               </button>
             </form>
           </div>
