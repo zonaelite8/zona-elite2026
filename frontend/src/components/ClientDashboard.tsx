@@ -264,8 +264,9 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
     };
     return {
       label: `Reservar (${spotsLeft} libre${spotsLeft !== 1 ? 's' : ''})`,
-      style: 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 cursor-pointer',
-      clickable: true
+      style: 'border-emerald-500/50 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 cursor-pointer shadow-sm hover:shadow-emerald-500/20 active:scale-[0.98] transition-transform duration-100',
+      clickable: true,
+      icon: <Calendar size={13} className="shrink-0" />
     };
   };
 
@@ -325,14 +326,40 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
           {activeTab === 'reservar' && (
             <div className="max-w-4xl mx-auto space-y-6">
 
+              {/* Banner Guía Paso a Paso */}
+              <div className="bg-gradient-to-br from-primary/15 via-primary/5 to-card border border-primary/20 rounded-2xl p-5 shadow-sm">
+                <div className="flex items-start gap-4">
+                  <div className="p-3 bg-primary/10 rounded-xl text-primary shrink-0 hidden sm:flex items-center justify-center">
+                    <Activity size={24} className="animate-pulse" />
+                  </div>
+                  <div className="space-y-2">
+                    <h4 className="font-heading font-bold text-sm uppercase tracking-wider text-primary">¿Cómo reservar tu clase? 🏋️</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                      <div className="flex gap-2.5 items-start bg-background/40 p-2.5 rounded-xl border border-border/50">
+                        <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0">1</span>
+                        <p className="text-xs text-muted-foreground"><strong className="text-foreground">Elige el día:</strong> Selecciona una fecha en el calendario de abajo.</p>
+                      </div>
+                      <div className="flex gap-2.5 items-start bg-background/40 p-2.5 rounded-xl border border-border/50">
+                        <span className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs shrink-0">2</span>
+                        <p className="text-xs text-muted-foreground"><strong className="text-foreground">Elige tu clase:</strong> Selecciona Fuerza 💪 o Personalizado 🎯.</p>
+                      </div>
+                      <div className="flex gap-2.5 items-start bg-background/40 p-2.5 rounded-xl border border-border/50">
+                        <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">3</span>
+                        <p className="text-xs text-muted-foreground"><strong className="text-foreground">¡Listo!</strong> Dale clic en el botón verde para confirmar tu cupo.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Date selector */}
-              <div className="bg-card border border-border rounded-2xl p-6">
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                   <h3 className="text-base font-bold flex items-center gap-2">
-                    <Calendar className="text-primary" size={18} /> Selecciona una fecha
+                    <Calendar className="text-primary" size={18} /> 1. Selecciona una fecha
                   </h3>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => setBaseDate(subDays(baseDate, 7))} className="p-2 bg-secondary rounded-lg hover:bg-secondary/80 text-muted-foreground hover:text-foreground font-bold">&lt;</button>
+                    <button onClick={() => setBaseDate(subDays(baseDate, 7))} className="p-2 bg-secondary rounded-lg hover:bg-secondary/80 text-muted-foreground hover:text-foreground font-bold transition-all" title="Semana anterior">&lt;</button>
                     <CustomDatePicker 
                       selectedDate={selectedDate} 
                       onChange={(d) => {
@@ -340,7 +367,7 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                         setBaseDate(d);
                       }} 
                     />
-                    <button onClick={() => setBaseDate(addDays(baseDate, 7))} className="p-2 bg-secondary rounded-lg hover:bg-secondary/80 text-muted-foreground hover:text-foreground font-bold">&gt;</button>
+                    <button onClick={() => setBaseDate(addDays(baseDate, 7))} className="p-2 bg-secondary rounded-lg hover:bg-secondary/80 text-muted-foreground hover:text-foreground font-bold transition-all" title="Siguiente semana">&gt;</button>
                   </div>
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -350,9 +377,13 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                       <button
                         key={i}
                         onClick={() => setSelectedDate(date)}
-                        className={`shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border-2 transition-all ${isSelected ? 'border-primary bg-primary text-primary-foreground' : 'border-border bg-background hover:border-primary/50 text-foreground'}`}
+                        className={`shrink-0 flex flex-col items-center justify-center w-20 h-20 rounded-2xl border-2 transition-all shadow-sm ${
+                          isSelected 
+                            ? 'border-primary bg-primary text-primary-foreground font-bold shadow-lg shadow-primary/20 scale-105' 
+                            : 'border-border bg-background hover:border-primary/40 text-foreground hover:scale-102'
+                        }`}
                       >
-                        <span className="text-xs uppercase font-semibold mb-1">{format(date, 'eee', { locale: es })}</span>
+                        <span className="text-[10px] uppercase font-semibold mb-1 opacity-80">{format(date, 'eee', { locale: es })}</span>
                         <span className="text-2xl font-heading font-bold">{format(date, 'd')}</span>
                       </button>
                     );
@@ -361,13 +392,20 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
               </div>
 
               {/* Time blocks */}
-              <div className="bg-card border border-border rounded-2xl p-6">
-                <h3 className="text-base font-bold mb-2 flex items-center gap-2">
-                  <Clock className="text-primary" size={18} /> Horarios disponibles
-                </h3>
-                <p className="text-xs text-muted-foreground mb-5">
-                  Regla: si hay 3+ personas en Fuerza → Personalizado se bloquea. Si hay 2 en Personalizado → Fuerza se bloquea.
-                </p>
+              <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                  <div>
+                    <h3 className="text-base font-bold flex items-center gap-2">
+                      <Clock className="text-primary" size={18} /> 2. Horarios disponibles
+                    </h3>
+                    <p className="text-xs text-primary font-semibold mt-1 capitalize flex items-center gap-1.5 bg-primary/10 px-2.5 py-1 rounded-md border border-primary/20 w-fit">
+                      📅 {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
+                    </p>
+                  </div>
+                  <div className="text-[10px] text-muted-foreground bg-secondary/40 p-2.5 rounded-xl border border-border/80 max-w-xs">
+                    💡 <strong className="text-foreground">Cupos máx:</strong> Fuerza (5 personas) / Personalizado (2 personas). Se bloquean mutuamente al llenarse.
+                  </div>
+                </div>
 
                 {timeBlocks.length === 0 ? (
                   <p className="text-muted-foreground text-sm text-center py-8">No hay horarios para este día.</p>
