@@ -8,6 +8,21 @@ if (connectionString && connectionString.includes('supabase.co') && connectionSt
   connectionString = connectionString.replace(':6543', ':5432');
 }
 
+// Render fix: el hostname interno "dpg-xxx" solo resuelve dentro de la red interna de Render.
+// Si existe EXTERNAL_DATABASE_URL, usarla como respaldo.
+if (connectionString) {
+  try {
+    const hostMatch = connectionString.match(/@([^:/]+)/);
+    if (hostMatch) {
+      const host = hostMatch[1];
+      if (host.startsWith('dpg-') && !host.includes('.') && process.env.EXTERNAL_DATABASE_URL) {
+        console.log('⚠️ Usando EXTERNAL_DATABASE_URL como respaldo para hostname interno de Render.');
+        connectionString = process.env.EXTERNAL_DATABASE_URL;
+      }
+    }
+  } catch(e) { /* ignore */ }
+}
+
 const isExternal = connectionString &&
   !connectionString.includes('localhost') &&
   !connectionString.includes('127.0.0.1');
