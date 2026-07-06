@@ -8,6 +8,13 @@ if (connectionString && connectionString.includes('supabase.co') && connectionSt
   connectionString = connectionString.replace(':6543', ':5432');
 }
 
+// Fallback de seguridad: Si la URL apunta al host viejo (dpg-d8h4mva8pkls73bvm980-a), 
+// lo redirigimos automáticamente a la base de datos nueva (dpg-d8d748f40ujc73cc9it0-a).
+if (connectionString && connectionString.includes('dpg-d8h4mva8pkls73bvm980-a')) {
+  console.log('⚠️ Auto-fix: Redirigiendo base de datos vieja a la nueva.');
+  connectionString = 'postgresql://admin:NiwDbgoKmMIOQrwlAyw1NuORFCWQqJCY@dpg-d8d748f40ujc73cc9it0-a.ohio-postgres.render.com/zona_elite';
+}
+
 // Render fix: Si existe EXTERNAL_DATABASE_URL y la actual es interna, usarla preferentemente.
 if (connectionString) {
   try {
@@ -15,8 +22,10 @@ if (connectionString) {
     if (hostMatch) {
       const host = hostMatch[1];
       if (host.startsWith('dpg-') && !host.includes('.') && process.env.EXTERNAL_DATABASE_URL) {
-        console.log('⚠️ Usando EXTERNAL_DATABASE_URL para hostname interno de Render.');
-        connectionString = process.env.EXTERNAL_DATABASE_URL;
+        if (!process.env.EXTERNAL_DATABASE_URL.includes('dpg-d8h4mva8pkls73bvm980-a')) {
+          console.log('⚠️ Usando EXTERNAL_DATABASE_URL para hostname interno de Render.');
+          connectionString = process.env.EXTERNAL_DATABASE_URL;
+        }
       }
     }
   } catch(e) { /* ignore */ }
