@@ -8,45 +8,24 @@ if (connectionString && connectionString.includes('supabase.co') && connectionSt
   connectionString = connectionString.replace(':6543', ':5432');
 }
 
-// Fallback de seguridad: Si la URL apunta al host viejo (dpg-d8h4mva8pkls73bvm980-a), 
-// lo redirigimos automáticamente a la base de datos nueva (dpg-d8d748f40ujc73cc9it0-a).
-if (connectionString && connectionString.includes('dpg-d8h4mva8pkls73bvm980-a')) {
-  console.log('⚠️ Auto-fix: Redirigiendo base de datos vieja a la nueva.');
-  connectionString = 'postgresql://admin:NiwDbgoKmMIOQrwlAyw1NuORFCWQqJCY@dpg-d8d748f40ujc73cc9it0-a.ohio-postgres.render.com/zona_elite';
-}
-
-// Render fix: Si existe EXTERNAL_DATABASE_URL y la actual es interna, usarla preferentemente.
-if (connectionString) {
-  try {
-    const hostMatch = connectionString.match(/@([^:/]+)/);
-    if (hostMatch) {
-      const host = hostMatch[1];
-      if (host.startsWith('dpg-') && !host.includes('.') && process.env.EXTERNAL_DATABASE_URL) {
-        if (!process.env.EXTERNAL_DATABASE_URL.includes('dpg-d8h4mva8pkls73bvm980-a')) {
-          console.log('⚠️ Usando EXTERNAL_DATABASE_URL para hostname interno de Render.');
-          connectionString = process.env.EXTERNAL_DATABASE_URL;
-        }
-      }
-    }
-  } catch(e) { /* ignore */ }
-}
-
-// Fix critico: el hostname interno de Render (ej: "dpg-d8d748f40ujc73cc9it0-a") a veces no resuelve DNS
-// o da error de conexión. Lo reemplazamos dinámicamente con su versión externa.
+// Fix critico: Render pone hostname INTERNO en DATABASE_URL (sin .render.com).
+// Esto falla si el servicio backend no está en la misma red. 
+// Solución: agregar el sufijo externo dinámicamente.
 if (connectionString) {
   try {
     const urlObj = new URL(connectionString);
     if (urlObj.hostname.startsWith('dpg-') && !urlObj.hostname.includes('.')) {
-      console.log(`⚠️ Auto-fix: Reemplazando hostname interno de Render (${urlObj.hostname}) con la versión externa.`);
+      console.log(`⚠️ Auto-fix: Convirtiendo hostname interno de Render a externo: ${urlObj.hostname} → ${urlObj.hostname}.ohio-postgres.render.com`);
       urlObj.hostname = `${urlObj.hostname}.ohio-postgres.render.com`;
       connectionString = urlObj.toString();
     }
   } catch (e) {
+    // Fallback con regex si URL() falla
     const hostMatch = connectionString.match(/@([^:/]+)/);
     if (hostMatch) {
       const host = hostMatch[1];
       if (host.startsWith('dpg-') && !host.includes('.')) {
-        console.log(`⚠️ Auto-fix (regex): Reemplazando hostname interno de Render (${host}) con la versión externa.`);
+        console.log(`⚠️ Auto-fix (regex): Convirtiendo hostname interno a externo: ${host}`);
         connectionString = connectionString.replace('@' + host, '@' + host + '.ohio-postgres.render.com');
       }
     }
