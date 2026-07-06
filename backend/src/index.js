@@ -38,6 +38,15 @@ app.get('/api/check-config', (req, res) => {
   });
 });
 
+app.get('/api/check-db-host', (req, res) => {
+  const dbUrl = process.env.DATABASE_URL;
+  const extDbUrl = process.env.EXTERNAL_DATABASE_URL;
+  res.json({
+    dbHost: dbUrl ? dbUrl.match(/@([^:/]+)/)?.[1] : 'NOT SET',
+    extDbHost: extDbUrl ? extDbUrl.match(/@([^:/]+)/)?.[1] : 'NOT SET',
+  });
+});
+
 app.get('/api/test-email', async (req, res) => {
   try {
     const nodemailer = require('nodemailer');
