@@ -284,13 +284,13 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
         <nav className="flex-1 p-4 space-y-2">
           <button
             onClick={() => { setActiveTab('reservar'); setSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reservar' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reservar' ? 'bg-primary text-white font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
           >
             <Calendar size={20} /> Reservar Horario
           </button>
           <button
             onClick={() => { setActiveTab('historial'); setSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'historial' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'historial' ? 'bg-primary text-white font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
           >
             <Clock size={20} /> Mis Reservas
           </button>
@@ -430,7 +430,7 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                             <div className={`p-4 bg-card flex flex-col gap-2 ${!fuerzaProps.clickable ? '' : ''}`}>
                               <div className="flex items-center gap-1.5 mb-1">
                                 <Dumbbell size={12} className="text-primary shrink-0" />
-                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tight text-primary leading-tight">Entrenamiento de Fuerza</span>
+                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tight text-primary leading-tight">Entrenamientos Personalizados de Fuerza</span>
                                 {block.fuerza && (
                                   <span className="ml-auto text-[10px] text-muted-foreground">
                                     {block.fuerza.bookings_count}/{block.fuerza.capacity}
@@ -440,7 +440,7 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                               {block.fuerza ? (
                                 <button
                                   disabled={!fuerzaProps.clickable}
-                                  onClick={() => fuerzaProps.clickable && setBookingModal({ slot: block.fuerza, label: 'Entrenamiento de Fuerza' })}
+                                  onClick={() => fuerzaProps.clickable && setBookingModal({ slot: block.fuerza, label: 'Entrenamientos Personalizados de Fuerza' })}
                                   className={`w-full py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${fuerzaProps.style}`}
                                 >
                                   {fuerzaProps.icon}
@@ -455,7 +455,7 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                             <div className="p-4 bg-card flex flex-col gap-2">
                               <div className="flex items-center gap-1.5 mb-1">
                                 <Activity size={12} className="text-emerald-400 shrink-0" />
-                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tight text-emerald-400 leading-tight">Entrenamiento Personalizado</span>
+                                <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-tight text-emerald-400 leading-tight">Entrenamiento Personalizado de Deportistas</span>
                                 {block.personalizado && (
                                   <span className="ml-auto text-[10px] text-muted-foreground">
                                     {block.personalizado.bookings_count}/{block.personalizado.capacity}
@@ -465,7 +465,7 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                               {block.personalizado ? (
                                 <button
                                   disabled={!persProps.clickable}
-                                  onClick={() => persProps.clickable && setBookingModal({ slot: block.personalizado, label: 'Entrenamiento Personalizado' })}
+                                  onClick={() => persProps.clickable && setBookingModal({ slot: block.personalizado, label: 'Entrenamiento Personalizado de Deportistas' })}
                                   className={`w-full py-2 px-3 rounded-lg border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${persProps.style}`}
                                 >
                                   {persProps.icon}
@@ -500,8 +500,8 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                   <div key={res.booking_id} className="bg-card border border-border rounded-2xl p-5 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 rounded-xl bg-secondary flex flex-col items-center justify-center border border-border shrink-0">
-                        <span className="text-xs uppercase font-semibold text-muted-foreground">{format(new Date(res.date + 'T12:00:00'), 'eee', { locale: es })}</span>
-                        <span className="text-xl font-heading font-bold">{format(new Date(res.date + 'T12:00:00'), 'd')}</span>
+                        <span className="text-xs uppercase font-semibold text-muted-foreground">{format(new Date(String(res.date).split('T')[0] + 'T12:00:00'), 'eee', { locale: es })}</span>
+                        <span className="text-xl font-heading font-bold">{format(new Date(String(res.date).split('T')[0] + 'T12:00:00'), 'd')}</span>
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">

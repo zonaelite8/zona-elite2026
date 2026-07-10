@@ -57,8 +57,8 @@ const getModalityLabel = (block: any) => {
   const showPers = hasPers && !persBlockedByRule;
 
   if (showFuerza && showPers) return <span className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-purple-500/30">AMBAS</span>;
-  if (showFuerza) return <span className="bg-primary/20 text-primary px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-primary/30">ENTRENAMIENTO DE FUERZA</span>;
-  if (showPers) return <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-emerald-500/30">ENTRENAMIENTO PERSONALIZADO</span>;
+  if (showFuerza) return <span className="bg-primary/20 text-primary px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-primary/30">ENTRENAMIENTOS PERSONALIZADOS DE FUERZA</span>;
+  if (showPers) return <span className="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-emerald-500/30">ENTRENAMIENTO PERSONALIZADO DE DEPORTISTAS</span>;
   return <span className="bg-red-500/20 text-red-400 px-2 py-1 rounded-md text-[9px] sm:text-[10px] font-bold uppercase tracking-tight border border-red-500/30">BLOQUEADO</span>;
 };
 
@@ -145,6 +145,10 @@ export function AdminDashboard({ onLogout }: any) {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
   const [newUserData, setNewUserData] = useState({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo', payment_amount: 0, payment_date: '', expiration_date: '', payment_status: 'pendiente' });
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [showUserReservationsModal, setShowUserReservationsModal] = useState<string | null>(null);
+  const [userReservationsList, setUserReservationsList] = useState<any[]>([]);
+  const [loadingUserReservations, setLoadingUserReservations] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; onConfirm: () => void; } | null>(null);
 
@@ -356,6 +360,7 @@ export function AdminDashboard({ onLogout }: any) {
       setIsCreatingNewUser(false);
       setNewUserData({ name: '', email: '', phone: '', cedula: '', plan_type: 'Entrenamiento Funcional - Plan Básico', payment_method: 'efectivo', payment_amount: 0, payment_date: '', expiration_date: '', payment_status: 'pendiente' });
       setSelectedUserIds([]);
+      setUserSearchQuery('');
       await fetchSlots();
       await fetchUsers();
     } catch (error: any) {
@@ -454,6 +459,43 @@ export function AdminDashboard({ onLogout }: any) {
           await fetchPlans();
         } catch (error: any) {
           showToast(error.message || 'Error al eliminar', 'error');
+        }
+      }
+    });
+  };
+
+  const loadUserReservations = async (userId: string) => {
+    setLoadingUserReservations(true);
+    try {
+      const all = await bookingsApi.getAll();
+      const userRes = all.filter((b: any) => b.user_id === userId);
+      setUserReservationsList(userRes);
+    } catch (error: any) {
+      showToast(error.message || 'Error al cargar reservas', 'error');
+    } finally {
+      setLoadingUserReservations(false);
+    }
+  };
+
+  const handleViewUserReservations = (userId: string) => {
+    setShowUserReservationsModal(userId);
+    loadUserReservations(userId);
+  };
+
+  const handleCancelBookingUser = (bookingId: number, userId: string) => {
+    setConfirmModal({
+      title: '¿Cancelar reserva?',
+      message: '¿Estás seguro de que deseas cancelar la reserva de este usuario?',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          await bookingsApi.cancel(bookingId);
+          playCancelSound();
+          showToast('¡Reserva cancelada con éxito!');
+          await fetchSlots();
+          await loadUserReservations(userId);
+        } catch (error: any) {
+          showToast(error.message || 'Error al cancelar', 'error');
         }
       }
     });
@@ -926,11 +968,18 @@ export function AdminDashboard({ onLogout }: any) {
                             <option value="vencido">Vencido</option>
                           </select>
                         </td>
-                        <td className="px-2 py-2 text-center">
+                        <td className="px-2 py-2 text-center flex items-center justify-center gap-2">
+                          <button 
+                            onClick={() => handleViewUserReservations(u.id)} 
+                            className="text-primary bg-primary/10 hover:bg-primary hover:text-white p-1.5 rounded-lg transition-all" 
+                            title="Ver Reservas"
+                          >
+                            <Calendar size={16} />
+                          </button>
                           {u.email !== 'zonaelite8@gmail.com' && (
                             <button 
                               onClick={() => handleDeleteUser(u.id)} 
-                              className="text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white p-1.5 rounded-lg transition-all mx-auto flex" 
+                              className="text-red-500 bg-red-500/10 hover:bg-red-500 hover:text-white p-1.5 rounded-lg transition-all" 
                               title="Eliminar Usuario"
                             >
                               <Trash2 size={16} />
@@ -1003,10 +1052,19 @@ export function AdminDashboard({ onLogout }: any) {
 
               {!isCreatingNewUser ? (
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block mb-2">Seleccionar Clientes ({selectedUserIds.length} seleccionados)</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider block">Seleccionar Clientes ({selectedUserIds.length} seleccionados)</label>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Buscar cliente..."
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    className="w-full bg-background border border-border rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-primary mb-3"
+                  />
                   <div className="bg-background border border-border rounded-xl max-h-[200px] overflow-y-auto p-2 space-y-1">
                     {usersList.length === 0 && <p className="text-sm text-muted-foreground p-3">No hay clientes registrados.</p>}
-                    {usersList.map(u => {
+                    {usersList.filter(u => u.name.toLowerCase().includes(userSearchQuery.toLowerCase())).map(u => {
                       const isSelected = selectedUserIds.includes(u.id);
                       return (
                         <label key={u.id} className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors border ${isSelected ? 'bg-primary/10 border-primary/30' : 'bg-transparent border-transparent hover:bg-secondary/50'}`}>
@@ -1411,6 +1469,36 @@ export function AdminDashboard({ onLogout }: any) {
                 {isCreating ? 'Guardando...' : 'Crear Plan'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showUserReservationsModal && (
+        <div className="fixed inset-0 bg-black/70 z-[100] flex items-center justify-center p-4 backdrop-blur-sm" onClick={(e) => { if (e.target === e.currentTarget) setShowUserReservationsModal(null); }}>
+          <div className="bg-card border border-border rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl">
+            <div className="p-5 border-b border-border flex justify-between items-center bg-secondary/30">
+              <h3 className="font-heading font-bold uppercase text-base">Reservas del Cliente</h3>
+              <button type="button" onClick={() => setShowUserReservationsModal(null)} className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-secondary"><X size={20} /></button>
+            </div>
+            <div className="p-5 max-h-[60vh] overflow-y-auto">
+              {loadingUserReservations ? (
+                <p className="text-center text-muted-foreground p-5">Cargando reservas...</p>
+              ) : userReservationsList.length === 0 ? (
+                <p className="text-center text-muted-foreground p-5">Este usuario no tiene reservas vigentes.</p>
+              ) : (
+                <div className="space-y-3">
+                  {userReservationsList.map(res => (
+                    <div key={res.booking_id} className="bg-background border border-border rounded-xl p-4 flex items-center justify-between">
+                      <div>
+                        <div className="font-bold uppercase text-sm mb-1 text-primary">{res.modality === 'fuerza' ? 'Fuerza' : 'Personalizado'}</div>
+                        <div className="text-xs text-muted-foreground font-semibold">Fecha: {res.date.split('T')[0]} | Hora: {formatTo12Hour(res.start_time)}</div>
+                      </div>
+                      <button onClick={() => handleCancelBookingUser(res.booking_id, showUserReservationsModal)} className="text-xs bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors font-semibold border border-red-500/20">Cancelar Reserva</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

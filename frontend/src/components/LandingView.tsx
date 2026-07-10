@@ -75,13 +75,13 @@ export function LandingView({ onNavigate }: Props) {
           <div className="grid md:grid-cols-2 gap-8">
             <ModalidadCard
               icon={<Dumbbell className="text-primary w-10 h-10" />}
-              title="Entrenamiento de Fuerza"
+              title="Entrenamientos Personalizados de Fuerza"
               desc="Sesiones enfocadas en hipertrofia y fuerza máxima. Espacio equipado con racks de competición y discos calibrados."
               badge="Máx. 5 personas / turno"
             />
             <ModalidadCard
               icon={<Activity className="text-primary w-10 h-10" />}
-              title="Personalizado Deportivo"
+              title="Entrenamiento Personalizado de Deportistas"
               desc="Atención 1-a-1 o 2-a-1. Trabajos específicos de biomecánica, readaptación o gestos técnicos de tu deporte."
               badge="Máx. 2 personas / turno"
             />
