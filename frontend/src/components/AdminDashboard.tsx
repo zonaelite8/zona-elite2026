@@ -661,7 +661,7 @@ export function AdminDashboard({ onLogout }: any) {
                               {/* Fuerza Column */}
                               <div>
                                 <div className="flex items-center justify-between mb-3">
-                                  <h4 className="text-xs font-bold uppercase text-primary">🏋️ Entre. Fuerza</h4>
+                                  <h4 className="text-xs font-bold uppercase text-primary">🏋️ Entrenamientos Personalizados de Fuerza</h4>
                                   <div className="flex items-center gap-1">
                                     {hasFuerza ? (
                                       <>
@@ -716,7 +716,7 @@ export function AdminDashboard({ onLogout }: any) {
                               {/* Personalizado Column */}
                               <div>
                                 <div className="flex items-center justify-between mb-3">
-                                  <h4 className="text-xs font-bold uppercase text-emerald-400">🎯 Entre. Pers.</h4>
+                                  <h4 className="text-xs font-bold uppercase text-emerald-400">🎯 Entrenamiento Personalizado de Deportistas</h4>
                                   <div className="flex items-center gap-1">
                                     {hasPers ? (
                                       <>
@@ -1289,7 +1289,7 @@ export function AdminDashboard({ onLogout }: any) {
                   >
                     <input type="checkbox" checked={createFuerza} onChange={() => {}} className="pointer-events-none rounded border-border text-primary h-4 w-4 bg-background accent-primary shrink-0" />
                     <div className="flex flex-col">
-                      <span className="text-sm">🏋️ Fuerza</span>
+                      <span className="text-sm">🏋️ Entrenamientos Personalizados de Fuerza</span>
                       <span className="text-[10px] opacity-75 font-normal">Capacidad máx: 5</span>
                     </div>
                   </div>
@@ -1303,7 +1303,7 @@ export function AdminDashboard({ onLogout }: any) {
                   >
                     <input type="checkbox" checked={createPersonalizado} onChange={() => {}} className="pointer-events-none rounded border-border text-emerald-500 h-4 w-4 bg-background accent-emerald-500 shrink-0" />
                     <div className="flex flex-col">
-                      <span className="text-sm">🎯 Personalizado</span>
+                      <span className="text-sm">🎯 Entrenamiento Personalizado de Deportistas</span>
                       <span className="text-[10px] opacity-75 font-normal">Capacidad máx: 2</span>
                     </div>
                   </div>
@@ -1490,7 +1490,7 @@ export function AdminDashboard({ onLogout }: any) {
                   {userReservationsList.map(res => (
                     <div key={res.booking_id} className="bg-background border border-border rounded-xl p-4 flex items-center justify-between">
                       <div>
-                        <div className="font-bold uppercase text-sm mb-1 text-primary">{res.modality === 'fuerza' ? 'Fuerza' : 'Personalizado'}</div>
+                        <div className="font-bold uppercase text-sm mb-1 text-primary">{res.modality === 'fuerza' ? 'Entrenamientos Personalizados de Fuerza' : 'Entrenamiento Personalizado de Deportistas'}</div>
                         <div className="text-xs text-muted-foreground font-semibold">Fecha: {res.date.split('T')[0]} | Hora: {formatTo12Hour(res.start_time)}</div>
                       </div>
                       <button onClick={() => handleCancelBookingUser(res.booking_id, showUserReservationsModal)} className="text-xs bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors font-semibold border border-red-500/20">Cancelar Reserva</button>
