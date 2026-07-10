@@ -135,7 +135,7 @@ export function LandingView({ onNavigate }: Props) {
       {/* ── Floating WhatsApp Button (Portaled to body to escape CSS transforms) ── */}
       {typeof document !== 'undefined' && createPortal(
         <a
-          href="https://wa.me/573206950680"
+          href="https://wa.me/573243317905"
           target="_blank"
           rel="noopener noreferrer"
           className="fixed bottom-6 right-6 bg-primary text-primary-foreground p-3.5 rounded-full shadow-2xl hover:scale-110 transition-transform z-50 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500 border-2 border-primary/30 hover:shadow-primary/40"
