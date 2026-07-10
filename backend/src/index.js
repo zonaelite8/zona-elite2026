@@ -1,6 +1,18 @@
 const express = require('express');
 const cors = require('cors');
+const compression = require('compression');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
+
+// Global Auto-Healing: Evita que la app se cierre por errores fatales
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! 💥 Auto-healing activo...', err.name, err.message);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥 Auto-healing activo...', err.name, err.message);
+});
 
 const authRoutes = require('./routes/auth.routes');
 const slotRoutes = require('./routes/slot.routes');
@@ -14,6 +26,18 @@ const app = express();
 const PORT = process.env.PORT || 5005;
 
 // Middleware
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 500, // Límite de peticiones por IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones desde esta IP, por favor intenta más tarde.' }
+});
+
+app.use(helmet()); // Blindaje de headers HTTP
+app.use(compression()); // Compresión GZIP para carga ULTRARÁPIDA
+app.use(limiter); // Protección anti-DDoS básica
+
 app.use(cors({
   origin: '*', // Allow all origins for simplicity or customize to frontend URL
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
