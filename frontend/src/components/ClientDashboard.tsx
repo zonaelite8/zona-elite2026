@@ -284,13 +284,13 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
         <nav className="flex-1 p-4 space-y-2">
           <button
             onClick={() => { setActiveTab('reservar'); setSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reservar' ? 'bg-primary text-white font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'reservar' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
           >
             <Calendar size={20} /> Reservar Horario
           </button>
           <button
             onClick={() => { setActiveTab('historial'); setSidebarOpen(false); }}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'historial' ? 'bg-primary text-white font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'historial' ? 'bg-primary text-primary-foreground font-semibold' : 'text-muted-foreground hover:bg-secondary hover:text-foreground'}`}
           >
             <Clock size={20} /> Mis Reservas
           </button>
