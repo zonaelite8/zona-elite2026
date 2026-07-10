@@ -138,7 +138,7 @@ export function LandingView({ onNavigate }: Props) {
           href="https://wa.me/573206950680"
           target="_blank"
           rel="noopener noreferrer"
-          className="fixed bottom-6 right-6 bg-[#25D366] text-white p-3.5 rounded-full shadow-2xl hover:scale-110 transition-transform z-50 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500"
+          className="fixed bottom-6 right-6 bg-primary text-primary-foreground p-3.5 rounded-full shadow-2xl hover:scale-110 transition-transform z-50 flex items-center justify-center animate-in fade-in slide-in-from-bottom-4 duration-500 border-2 border-primary/30 hover:shadow-primary/40"
           title="Contáctanos por WhatsApp"
         >
           <svg viewBox="0 0 24 24" fill="currentColor" width="32" height="32">
