@@ -5,10 +5,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import type { ViewState, UserSession } from '@/types'
 
-function decodeToken(token: string): UserSession | null {
+function decodeToken(token: string): any {
   try {
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
-    return JSON.parse(window.atob(base64)) as UserSession
+    const decoded = JSON.parse(window.atob(base64))
+    
+    // Check if token is expired (exp is in seconds)
+    if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+      return null;
+    }
+    
+    return decoded as UserSession
   } catch {
     return null
   }
@@ -32,6 +39,16 @@ export function useSession() {
       }
     }
     setChecking(false)
+
+    // Listen for session expiration from API
+    const handleSessionExpired = () => {
+      localStorage.removeItem('token')
+      setUser(null)
+      setView('landing')
+    }
+    
+    window.addEventListener('session-expired', handleSessionExpired)
+    return () => window.removeEventListener('session-expired', handleSessionExpired)
   }, [])
 
   const login = useCallback((token: string, userData: UserSession) => {

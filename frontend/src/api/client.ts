@@ -29,6 +29,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     console.error('Failed to parse JSON:', text);
   }
 
+  // Handle token expiration/invalid token errors
+  if (res.status === 401 || res.status === 403) {
+    if (
+      data.error === 'Invalid or expired token' || 
+      data.error === 'Access token required' ||
+      data.error === 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.'
+    ) {
+      // Don't trigger logout for verification error, just for token errors
+      if (data.error !== 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.') {
+        window.dispatchEvent(new Event('session-expired'));
+        throw new Error('Tu sesión ha expirado, por favor inicia sesión nuevamente');
+      }
+    }
+  }
+
   if (!res.ok) throw new Error(data.error ?? 'Error del servidor');
   return data as T;
 }
