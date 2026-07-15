@@ -163,7 +163,8 @@ export function AdminDashboard({ onLogout }: any) {
 
   const fetchSlots = async () => {
     try {
-      const response = await slotsApi.getAdminSlots();
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const response = await slotsApi.getAdminSlots(dateStr);
       setSlots(response);
     } catch (error) {}
   };
@@ -202,16 +203,19 @@ export function AdminDashboard({ onLogout }: any) {
   };
 
   useEffect(() => {
-    fetchSlots();
-    fetchNotifications();
     fetchUsers();
     fetchPlans();
+  }, []);
+
+  useEffect(() => {
+    fetchSlots();
+    fetchNotifications();
     const interval = setInterval(() => {
       fetchSlots();
       fetchNotifications();
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [selectedDate]);
 
   useEffect(() => {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
