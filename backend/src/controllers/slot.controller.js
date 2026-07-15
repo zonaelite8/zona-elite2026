@@ -23,7 +23,7 @@ const getSlots = async (req, res) => {
       queryText += ` WHERE s.date = $1`;
       params.push(date);
     } else {
-      queryText += ` WHERE s.date >= CURRENT_DATE`;
+      queryText += ` WHERE s.date >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date`;
     }
 
     queryText += ` GROUP BY s.id ORDER BY s.date ASC, s.start_time ASC`;
@@ -202,7 +202,7 @@ const getAdminSlots = async (req, res) => {
       queryText += ` WHERE s.date = $1`;
       params.push(date);
     } else {
-      queryText += ` WHERE s.date >= CURRENT_DATE`;
+      queryText += ` WHERE s.date >= (CURRENT_TIMESTAMP AT TIME ZONE 'America/Bogota')::date`;
     }
 
     queryText += ` GROUP BY s.id ORDER BY s.date ASC, s.start_time ASC, s.modality ASC`;
