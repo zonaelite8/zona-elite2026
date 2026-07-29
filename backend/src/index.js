@@ -45,9 +45,14 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Ultra-lightweight wake endpoint (no DB, instant response)
+app.get('/api/wake', (req, res) => {
+  res.json({ status: 'awake', ts: Date.now() });
+});
+
 // Check server status
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '1.0.4' });
+  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '1.0.5' });
 });
 
 // Diagnostic: check email config (instant, no sending)
@@ -158,5 +163,18 @@ app.listen(PORT, () => {
       // Don't crash — server stays up, migrations can be retried via /api/setup
     }
   }, 2000); // 2 second delay to let the server fully boot first
+
+  // Keep-alive: Self-ping every 14 min to prevent Render free tier from sleeping
+  const KEEP_ALIVE_INTERVAL = 14 * 60 * 1000; // 14 minutes
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  setInterval(async () => {
+    try {
+      const res = await fetch(`${RENDER_URL}/health`);
+      console.log(`[Keep-Alive] Ping OK — status ${res.status}`);
+    } catch (err) {
+      console.log('[Keep-Alive] Ping failed (non-fatal):', err.message);
+    }
+  }, KEEP_ALIVE_INTERVAL);
+  console.log(`[Keep-Alive] Self-ping activo cada ${KEEP_ALIVE_INTERVAL / 60000} minutos`);
 });
 

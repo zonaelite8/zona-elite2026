@@ -2,7 +2,7 @@ const { Resend } = require('resend');
 require('dotenv').config();
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-
+    
 async function testExternalEmail() {
   console.log("Intentando enviar a un correo de usuario externo...");
   try {

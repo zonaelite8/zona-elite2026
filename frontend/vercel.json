@@ -1,12 +1,8 @@
 {
   "rewrites": [
     {
-      "source": "/api/send-email",
-      "destination": "/api/send-email"
-    },
-    {
       "source": "/api/:path*",
-      "destination": "https://zona-elite2026.onrender.com/api/:path*"
+      "destination": "/api/server.js"
     },
     {
       "source": "/(.*)",
@@ -14,4 +10,3 @@
     }
   ]
 }
-

@@ -35,7 +35,10 @@ export function AuthView({ onNavigate, onLogin }: Props) {
         if (activePlans.length > 0) {
           setPlanType(activePlans[0].name);
         }
-      }).catch(console.error);
+      }).catch((err) => {
+        console.error('Error loading plans:', err);
+        setError('No se pudieron cargar los planes. El servidor puede estar iniciando, intenta de nuevo en unos segundos.');
+      });
     }
   }, [mode, dbPlans.length]);
   async function handleLogin(e: FormEvent) {
@@ -75,7 +78,10 @@ export function AuthView({ onNavigate, onLogin }: Props) {
         onNavigate(response.user.role as ViewState)
       }
     } catch (err: any) {
-      setError(err.message ?? 'Error de conexión')
+      const msg = err.message ?? 'Error de conexión';
+      setError(msg.includes('no responde') || msg.includes('No se pudo conectar') 
+        ? 'El servidor está iniciando, por favor espera unos segundos e intenta de nuevo.' 
+        : msg)
     } finally {
       setLoading(false)
     }
@@ -95,7 +101,10 @@ export function AuthView({ onNavigate, onLogin }: Props) {
       const response = await authApi.forgotPassword(email)
       setSuccess(response.message)
     } catch (err: any) {
-      setError(err.message ?? 'Error al enviar el enlace')
+      const msg = err.message ?? 'Error al enviar el enlace';
+      setError(msg.includes('no responde') || msg.includes('No se pudo conectar') 
+        ? 'El servidor está iniciando, por favor espera unos segundos e intenta de nuevo.' 
+        : msg)
     } finally {
       setLoading(false)
     }
@@ -110,7 +119,10 @@ export function AuthView({ onNavigate, onLogin }: Props) {
       onLogin(token, user)
       onNavigate(user.role as ViewState)
     } catch (err: any) {
-      setError(err.message ?? 'Error de conexión')
+      const msg = err.message ?? 'Error de conexión';
+      setError(msg.includes('no responde') || msg.includes('No se pudo conectar') 
+        ? 'El servidor está iniciando, por favor espera unos segundos e intenta de nuevo.' 
+        : msg)
     } finally {
       setLoading(false)
     }
@@ -212,10 +224,10 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                         <div 
                           key={plan.id}
                           onClick={() => setPlanType(plan.name)}
-                          className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex flex-col gap-1 select-none relative ${
+                          className={`p-4 rounded-xl border-2 cursor-pointer select-none relative flex flex-col gap-1.5 transition-all duration-200 ease-out active:scale-[0.98] ${
                             isSelected 
-                              ? 'border-primary bg-primary/10 shadow-sm' 
-                              : 'border-border bg-card hover:border-border/80'
+                              ? 'border-primary bg-primary/10 shadow-md shadow-primary/5 scale-[1.01]' 
+                              : 'border-border/60 bg-card hover:border-primary/40 hover:bg-secondary/30 hover:scale-[1.01] hover:shadow-md'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -236,7 +248,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                           )}
 
                           {isSelected && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-[10px] font-bold">
+                            <div className="absolute right-3.5 top-1/2 -translate-y-1/2 w-5 h-5 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold shadow-sm shadow-primary/25 text-xs animate-in zoom-in duration-200">
                               ✓
                             </div>
                           )}

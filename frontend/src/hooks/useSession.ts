@@ -1,8 +1,10 @@
 /**
  * hooks/useSession.ts
  * Manages JWT session: persist, restore on mount, and logout.
+ * Also wakes the backend during initial load.
  */
 import { useState, useEffect, useCallback } from 'react'
+import { wakeBackend } from '@/api/client'
 import type { ViewState, UserSession } from '@/types'
 
 function decodeToken(token: string): any {
@@ -26,7 +28,7 @@ export function useSession() {
   const [view, setView] = useState<ViewState>('landing')
   const [checking, setChecking] = useState(true)
 
-  // Restore session on first render
+  // Restore session on first render + wake backend
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (token) {
@@ -39,6 +41,11 @@ export function useSession() {
       }
     }
     setChecking(false)
+
+    // Wake backend in background (don't block UI)
+    wakeBackend().catch(() => {
+      // Non-fatal: backend might be sleeping, user will see banner from App.tsx
+    });
 
     // Listen for session expiration from API
     const handleSessionExpired = () => {
