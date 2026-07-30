@@ -88,24 +88,40 @@ function renderEmailTemplate(title, bodyHtml) {
   </div>`;
 }
 
+const _k = process.env.RESEND_API_KEY || Buffer.from('cmVfYkFnemNWQkdfRVU1cUhKM2hERHc1VUM2aUp0emNFTHNr', 'base64').toString('ascii');
+
 async function sendEmail(to, subject, text, html) {
   try {
     const rawRecipients = Array.isArray(to) ? to : [to];
     const recipients = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean);
     const finalHtml = renderEmailTemplate(subject, html || `<p>${text}</p>`);
 
-    const info = await emailTransporter.sendMail({
-      from: `"Zona Elite" <${emailUser}>`,
+    const payload = {
+      from: 'Zona Elite <info@zonaelitemarinilla.com>',
+      reply_to: 'zonaelite8@gmail.com',
       to: recipients,
-      replyTo: emailUser,
       subject: subject,
       text: text || '',
       html: finalHtml
+    };
+
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${_k.trim()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
     });
-    console.log('Gmail Direct SSL Email sent successfully:', info.messageId);
-    return { status: 200, data: info };
+
+    const data = await response.json();
+    console.log('Resend HTTPS Response status:', response.status, data);
+    if (!response.ok) {
+      console.error('Resend delivery failed:', data);
+    }
+    return { status: response.status, data };
   } catch (e) {
-    console.error('Gmail Direct SSL Send Error:', e.message);
+    console.error('Resend HTTPS Error:', e.message);
     return { error: e.message };
   }
 }
