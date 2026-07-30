@@ -78,11 +78,13 @@ function renderEmailTemplate(title, bodyHtml) {
 async function sendEmail(to, subject, text, html) {
   try {
     const recipients = Array.isArray(to) ? to : [to];
+    // Sender as Zona Elite with reply_to to zonaelite8@gmail.com
     const fromAddress = process.env.RESEND_FROM_EMAIL || 'Zona Elite <info@zonaelitemarinilla.com>';
     const finalHtml = renderEmailTemplate(subject, html || `<p>${text}</p>`);
     
     const payload = {
       from: fromAddress,
+      reply_to: 'zonaelite8@gmail.com',
       to: recipients,
       subject: subject,
       text: text || '',
