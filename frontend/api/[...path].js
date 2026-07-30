@@ -133,7 +133,7 @@ app.get('/api/debug', (req, res) => res.json({ url: req.url, originalUrl: req.or
 
 // ─── Wake / Health ───────────────────────────────────────────────────────────
 app.get('/api/wake', (req, res) => res.json({ status: 'awake', ts: Date.now() }));
-app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '3.0.0' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '4.0.0-RESEND-VERIFIED-TEST-1142' }));
 app.get('/api/test-email', async (req, res) => {
   try {
     const targetEmail = req.query.email || 'zonaelite8@gmail.com';
