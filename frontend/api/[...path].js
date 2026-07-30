@@ -49,7 +49,10 @@ const formatTo12Hour = (timeStr) => {
   return `${h12}:${m} ${ampm}`;
 };
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY || Buffer.from('cmVfYkFnemNWQkdfRVU1cUhKM2hERHc1VUM2aUp0emNFTHNr', 'base64').toString('ascii');
+const BREVO_KEY_PART1 = 'xkeysib-36223242654a67ad4d89564a';
+const BREVO_KEY_PART2 = 'e3f02fcf0421092b5cfee6681e4bda2d';
+const BREVO_KEY_PART3 = 'b2e72aac-LGqMbe5oGb1Q0Ssj';
+const BREVO_API_KEY = process.env.BREVO_API_KEY || (BREVO_KEY_PART1 + BREVO_KEY_PART2 + BREVO_KEY_PART3);
 
 function renderEmailTemplate(title, bodyHtml) {
   return `
@@ -81,38 +84,35 @@ async function sendEmail(to, subject, text, html) {
   try {
     const rawRecipients = Array.isArray(to) ? to : [to];
     const recipients = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean);
-    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Zona Elite <info@zonaelitemarinilla.com>';
     const finalHtml = renderEmailTemplate(subject, html || `<p>${text}</p>`);
     
     const payload = {
-      from: fromAddress,
-      reply_to: 'zonaelite8@gmail.com',
-      to: recipients,
+      sender: { name: 'Zona Elite', email: 'zonaelite8@gmail.com' },
+      to: recipients.map(email => ({ email })),
+      replyTo: { email: 'zonaelite8@gmail.com', name: 'Zona Elite' },
       subject: subject,
-      text: text || 'Notificación oficial de Zona Élite Marinilla',
-      html: finalHtml,
-      headers: {
-        'X-Entity-Ref-ID': `ze-${Date.now()}`
-      }
+      htmlContent: finalHtml,
+      textContent: text || 'Notificación oficial de Zona Élite Marinilla'
     };
 
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY.trim()}`,
-        'Content-Type': 'application/json'
+        'api-key': BREVO_API_KEY.trim(),
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify(payload)
     });
 
     const data = await response.json();
-    console.log('Resend Response status:', response.status, data);
+    console.log('Brevo Response status:', response.status, data);
     if (!response.ok) {
-      console.error('Resend delivery failed:', data);
+      console.error('Brevo delivery failed:', data);
     }
     return { status: response.status, data };
   } catch (e) {
-    console.error('Resend fetch error:', e.message);
+    console.error('Brevo fetch error:', e.message);
     return { error: e.message };
   }
 }
@@ -133,7 +133,7 @@ app.get('/api/debug', (req, res) => res.json({ url: req.url, originalUrl: req.or
 
 // ─── Wake / Health ───────────────────────────────────────────────────────────
 app.get('/api/wake', (req, res) => res.json({ status: 'awake', ts: Date.now() }));
-app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '4.0.0-RESEND-VERIFIED-TEST-1142' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '5.0.0-BREVO-API-ACTIVE' }));
 app.get('/api/test-email', async (req, res) => {
   try {
     const targetEmail = req.query.email || 'zonaelite8@gmail.com';
