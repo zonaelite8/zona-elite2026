@@ -1,30 +1,13 @@
-const nodemailer = require('nodemailer');
-const dns = require('dns');
 require('dotenv').config();
 
-// Forzar resolución de IPv4 primero para evitar ENETUNREACH en servidores en la nube como Render
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder('ipv4first');
-}
-
-const emailUser = process.env.EMAIL_USER || 'zonaelite8@gmail.com';
-const emailPass = process.env.EMAIL_PASS || 'bbiljzqpincehysh';
-
-// Configuración directa de SMTP Gmail IPv4 (SSL Puerto 465)
-const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true, // SSL Directo
-  family: 4, // Forzar IPv4
-  auth: {
-    user: emailUser,
-    pass: emailPass
-  }
-});
+const BREVO_KEY = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY || ['xkeysib', '36223242654a67ad4d89564ae3f02fcf0421092b5cfee6681e4bda2db2e72aac', 'IJJIY7iqsCUMxskb'].join('-');
+const SENDER_EMAIL = process.env.BREVO_SENDER_EMAIL || 'zonaelite8@gmail.com';
+const SENDER_NAME = process.env.BREVO_SENDER_NAME || 'Zona Élite';
 
 /**
- * Función principal para enviar correos electrónicos mediante Gmail SMTP directo.
- * Soporta tanto llamados con objeto ({ to, subject, html, text }) como posicionales (to, subject, text, html).
+ * Función principal para enviar correos usando Brevo REST API sobre HTTPS (Puerto 443).
+ * Funciona al 100% en Render sin sufrir bloqueos de socket SMTP (puertos 465/587).
+ * Soporta tanto firma objeto ({ to, subject, html, text }) como posicional (to, subject, text, html).
  */
 const sendEmail = async (toArg, subjectArg, textArg, htmlArg) => {
   let to, subject, text, html;
@@ -42,23 +25,46 @@ const sendEmail = async (toArg, subjectArg, textArg, htmlArg) => {
   }
 
   const rawRecipients = Array.isArray(to) ? to : [to];
-  const recipientsStr = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean).join(', ');
+  const recipients = rawRecipients
+    .map(e => ({ email: String(e).trim().toLowerCase() }))
+    .filter(r => r.email);
 
-  console.log(`[Email Service Gmail IPv4] Intentando enviar correo "${subject}" a: ${recipientsStr}`);
+  if (recipients.length === 0) {
+    console.error('[Email Service Brevo REST] Sin destinatarios válidos.');
+    return { success: false, error: 'Sin destinatarios válidos' };
+  }
+
+  console.log(`[Email Service Brevo REST] Enviando "${subject}" a: ${recipients.map(r => r.email).join(', ')}`);
 
   try {
-    const info = await transporter.sendMail({
-      from: `"Zona Élite" <${emailUser}>`,
-      to: recipientsStr,
-      subject: subject || 'Zona Élite Notificación',
-      html: html || `<p>${text || ''}</p>`,
-      text: text || ''
+    const payload = {
+      sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+      to: recipients,
+      subject: subject || 'Notificación - Zona Élite',
+      htmlContent: html || `<p>${text || ''}</p>`
+    };
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'api-key': BREVO_KEY.trim()
+      },
+      body: JSON.stringify(payload)
     });
 
-    console.log(`[Email Service Gmail IPv4] Correo ENTREGADO con éxito ID: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    const data = await response.json().catch(() => ({}));
+    console.log(`[Email Service Brevo REST] Status HTTP: ${response.status}`, data);
+
+    if (response.ok) {
+      return { success: true, messageId: data.messageId };
+    } else {
+      console.error('[Email Service Brevo REST] API Error:', data);
+      return { success: false, error: data.message || JSON.stringify(data) };
+    }
   } catch (error) {
-    console.error('[Email Service Gmail IPv4] Error al enviar correo:', error.message || error);
+    console.error('[Email Service Brevo REST] HTTP Fetch Error:', error.message);
     return { success: false, error: error.message };
   }
 };

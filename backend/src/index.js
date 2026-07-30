@@ -57,7 +57,7 @@ app.get('/api/wake', (req, res) => {
 
 // Check server status
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '1.0.7-IPV4-ACTIVE' });
+  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '2.0.0-BREVO-HTTPS-ACTIVE' });
 });
 
 // Diagnostic: check email config (instant, no sending)
@@ -83,24 +83,12 @@ app.get('/api/check-db-host', (req, res) => {
 
 app.get('/api/test-email', async (req, res) => {
   try {
-    const nodemailer = require('nodemailer');
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      family: 4,
-      auth: {
-        user: process.env.EMAIL_USER || 'zonaelite8@gmail.com',
-        pass: process.env.EMAIL_PASS || 'bbiljzqpincehysh'
-      },
-      connectionTimeout: 10000
-    });
-
-    await transporter.verify();
-
-    res.json({ success: true, message: 'SMTP credentials verified successfully via IPv4 SSL Port 465' });
+    const { sendEmail } = require('./services/email.service');
+    const targetEmail = req.query.email || 'zonaelite8@gmail.com';
+    const result = await sendEmail(targetEmail, 'Prueba Zona Élite Brevo REST', 'Este es un correo de prueba.', '<h1>Prueba Brevo HTTPS Exitosa</h1>');
+    res.json({ success: true, result, targetEmail });
   } catch (error) {
-    res.json({ success: false, error: error.message || String(error) });
+    res.status(500).json({ success: false, error: error.message || String(error) });
   }
 });
 
