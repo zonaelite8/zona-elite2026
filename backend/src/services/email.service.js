@@ -1,14 +1,21 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 require('dotenv').config();
+
+// Forzar resolución de IPv4 primero para evitar ENETUNREACH en servidores en la nube como Render
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const emailUser = process.env.EMAIL_USER || 'zonaelite8@gmail.com';
 const emailPass = process.env.EMAIL_PASS || 'bbiljzqpincehysh';
 
-// Configuración directa de SMTP Gmail (SSL Puerto 465)
+// Configuración directa de SMTP Gmail IPv4 (SSL Puerto 465)
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
   secure: true, // SSL Directo
+  family: 4, // Forzar IPv4
   auth: {
     user: emailUser,
     pass: emailPass
@@ -37,7 +44,7 @@ const sendEmail = async (toArg, subjectArg, textArg, htmlArg) => {
   const rawRecipients = Array.isArray(to) ? to : [to];
   const recipientsStr = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean).join(', ');
 
-  console.log(`[Email Service Gmail] Intentando enviar correo "${subject}" a: ${recipientsStr}`);
+  console.log(`[Email Service Gmail IPv4] Intentando enviar correo "${subject}" a: ${recipientsStr}`);
 
   try {
     const info = await transporter.sendMail({
@@ -48,10 +55,10 @@ const sendEmail = async (toArg, subjectArg, textArg, htmlArg) => {
       text: text || ''
     });
 
-    console.log(`[Email Service Gmail] Correo ENTREGADO con éxito ID: ${info.messageId}`);
+    console.log(`[Email Service Gmail IPv4] Correo ENTREGADO con éxito ID: ${info.messageId}`);
     return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('[Email Service Gmail] Error al enviar correo:', error.message || error);
+    console.error('[Email Service Gmail IPv4] Error al enviar correo:', error.message || error);
     return { success: false, error: error.message };
   }
 };

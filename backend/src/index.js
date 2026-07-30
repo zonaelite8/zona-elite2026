@@ -3,7 +3,12 @@ const cors = require('cors');
 const compression = require('compression');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const dns = require('dns');
 require('dotenv').config();
+
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 // Global Auto-Healing: Evita que la app se cierre por errores fatales
 process.on('uncaughtException', (err) => {
@@ -52,7 +57,7 @@ app.get('/api/wake', (req, res) => {
 
 // Check server status
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '1.0.6' });
+  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '1.0.7-IPV4-ACTIVE' });
 });
 
 // Diagnostic: check email config (instant, no sending)
@@ -81,19 +86,19 @@ app.get('/api/test-email', async (req, res) => {
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      requireTLS: true,
+      port: 465,
+      secure: true,
+      family: 4,
       auth: {
         user: process.env.EMAIL_USER || 'zonaelite8@gmail.com',
         pass: process.env.EMAIL_PASS || 'bbiljzqpincehysh'
       },
       connectionTimeout: 10000
     });
-    
+
     await transporter.verify();
-    
-    res.json({ success: true, message: 'SMTP credentials verified successfully' });
+
+    res.json({ success: true, message: 'SMTP credentials verified successfully via IPv4 SSL Port 465' });
   } catch (error) {
     res.json({ success: false, error: error.message || String(error) });
   }
