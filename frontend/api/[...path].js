@@ -65,22 +65,18 @@ async function sendEmail(to, subject, text, html) {
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${_k}`,
+        'Authorization': `Bearer ${_k.trim()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
     });
 
     const data = await response.json();
-    if (!response.ok) {
-      console.error('Resend API Error:', data);
-      return false;
-    }
-    console.log('Resend email sent successfully:', data);
-    return true;
+    console.log('Resend Response status:', response.status, data);
+    return { status: response.status, data };
   } catch (e) {
     console.error('Resend fetch error:', e.message);
-    return false;
+    return { error: e.message };
   }
 }
 
@@ -104,10 +100,10 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Eli
 app.get('/api/test-email', async (req, res) => {
   try {
     const targetEmail = req.query.email || 'zonaelite8@gmail.com';
-    const sent = await sendEmail(targetEmail, 'Prueba Zona Elite', 'Este es un correo de prueba', '<h1>Correo de prueba exitoso</h1>');
-    res.json({ success: sent, targetEmail, emailUser });
+    const result = await sendEmail(targetEmail, 'Prueba Zona Elite', 'Este es un correo de prueba de Zona Elite', '<h1>Correo de prueba exitoso</h1>');
+    res.json({ result, targetEmail, apiKeyPreview: _k ? _k.substring(0, 7) + '...' : 'NONE' });
   } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
+    res.status(500).json({ success: false, error: e.message, stack: e.stack });
   }
 });
 
