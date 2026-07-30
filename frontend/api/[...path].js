@@ -129,7 +129,7 @@ app.get('/api/test-email', async (req, res) => {
   try {
     const targetEmail = req.query.email || 'zonaelite8@gmail.com';
     const result = await sendEmail(targetEmail, 'Prueba Zona Elite', 'Este es un correo de prueba de Zona Elite', '<h1>Correo de prueba exitoso</h1>');
-    res.json({ result, targetEmail, apiKeyPreview: _k ? _k.substring(0, 7) + '...' : 'NONE' });
+    res.json({ result, targetEmail, apiKeyPreview: RESEND_API_KEY ? RESEND_API_KEY.substring(0, 7) + '...' : 'NONE' });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message, stack: e.stack });
   }
