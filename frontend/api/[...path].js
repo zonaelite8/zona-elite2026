@@ -11,8 +11,10 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 
 // ─── Database ────────────────────────────────────────────────────────────────
+const dbUrl = process.env.DATABASE_URL || 'postgresql://neondb_owner:npg_KAo4Uz7RlxdM@ep-steep-snow-atiy8vue-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require';
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: dbUrl,
   ssl: { rejectUnauthorized: false },
   connectionTimeoutMillis: 10000,
 });
