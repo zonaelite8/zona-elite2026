@@ -424,7 +424,7 @@ app.delete('/api/users/:id', authenticateToken, isAdmin, async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 app.get('/api/plans', async (req, res) => {
   try { const r = await pool.query('SELECT * FROM plans ORDER BY id ASC'); return res.json(r.rows); }
-  catch (e) { return res.status(500).json({ error: 'Internal server error' }); }
+  catch (e) { return res.status(500).json({ error: 'Internal server error', message: e.message, stack: e.stack }); }
 });
 
 app.post('/api/plans', authenticateToken, isAdmin, async (req, res) => {
