@@ -58,7 +58,7 @@ function renderEmailTemplate(title, bodyHtml) {
       <!-- Header / Logo Oficial Zona Élite -->
       <div style="background:#09090b;padding:32px 24px;text-align:center;border-bottom:2px solid #f59e0b">
         <a href="https://zonaelitemarinilla.com" style="text-decoration:none;display:inline-block">
-          <img src="https://zonaelitemarinilla.com/logo-oficial.svg" alt="Zona Élite Logo Oficial" width="220" height="247" style="display:block;margin:0 auto;border:0;outline:none;max-width:100%;height:auto" />
+          <img src="https://zonaelitemarinilla.com/logo-oficial.png" alt="Zona Élite Logo Oficial" width="220" style="display:block;margin:0 auto;border:0;outline:none;max-width:100%;height:auto" />
         </a>
       </div>
       <!-- Content -->
