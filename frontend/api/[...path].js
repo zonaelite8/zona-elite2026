@@ -133,13 +133,17 @@ app.post('/api/auth/register', async (req, res) => {
     const user = result.rows[0];
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula }, JWT_SECRET, { expiresIn: '7d' });
     
-    // Send welcome email asynchronously
-    sendEmail(
-      email, 
-      '¡Bienvenido a Zona Elite!', 
-      `Hola ${name}, tu cuenta ha sido creada exitosamente en Zona Elite.`, 
-      `<div style="font-family:sans-serif;padding:20px;background:#111;color:#fff;border-radius:8px"><h2 style="color:#D4A017">¡Bienvenido a Zona Elite, ${name}!</h2><p>Tu cuenta ha sido creada y verificada exitosamente.</p><p>Ya puedes reservar tus clases de entrenamiento desde nuestra plataforma.</p></div>`
-    ).catch(e => console.error('Welcome email error:', e));
+    // Send welcome email with await (required in Serverless)
+    try {
+      await sendEmail(
+        email, 
+        '¡Bienvenido a Zona Elite!', 
+        `Hola ${name}, tu cuenta ha sido creada exitosamente en Zona Elite.`, 
+        `<div style="font-family:sans-serif;padding:20px;background:#111;color:#fff;border-radius:8px"><h2 style="color:#D4A017">¡Bienvenido a Zona Elite, ${name}!</h2><p>Tu cuenta ha sido creada exitosamente.</p><p>Ya puedes reservar tus clases de entrenamiento desde nuestra plataforma.</p></div>`
+      );
+    } catch (emailErr) {
+      console.error('Welcome email error:', emailErr);
+    }
 
     return res.status(201).json({ message: 'Registro exitoso.', token, user });
   } catch (e) { console.error('Register error:', e); return res.status(500).json({ error: 'Error en el registro', detail: e.message }); }
