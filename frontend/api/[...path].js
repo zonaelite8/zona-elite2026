@@ -54,8 +54,11 @@ const _k = process.env.RESEND_API_KEY || Buffer.from('cmVfYkFnemNWQkdfRVU1cUhKM2
 async function sendEmail(to, subject, text, html) {
   try {
     const recipients = Array.isArray(to) ? to : [to];
+    // Use custom domain if configured, or default onboarding domain
+    const fromAddress = process.env.RESEND_FROM_EMAIL || 'Zona Elite <onboarding@resend.dev>';
+    
     const payload = {
-      from: 'Zona Elite <onboarding@resend.dev>',
+      from: fromAddress,
       to: recipients,
       subject: subject,
       text: text || '',
