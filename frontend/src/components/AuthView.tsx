@@ -53,7 +53,10 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     setSuccess('')
     try {
       const response: any = await authApi.register(name, email, password, planType)
-      if (response.token && response.user) {
+      if (response.needsVerification || !(response.token && response.user)) {
+        setMode('verify')
+        setSuccess('¡Registro exitoso! Te enviamos el código de 6 dígitos a tu correo.')
+      } else if (response.token && response.user) {
         onLogin(response.token, response.user)
         onNavigate(response.user.role as ViewState)
       }
