@@ -87,7 +87,7 @@ async function sendEmail(to, subject, text, html) {
     const finalHtml = renderEmailTemplate(subject, html || `<p>${text}</p>`);
     
     const payload = {
-      sender: { name: 'Zona Elite', email: 'info@zonaelitemarinilla.com' },
+      sender: { name: 'Zona Elite', email: 'zonaelite8@gmail.com' },
       to: recipients.map(email => ({ email })),
       replyTo: { email: 'zonaelite8@gmail.com', name: 'Zona Elite' },
       subject: subject,
