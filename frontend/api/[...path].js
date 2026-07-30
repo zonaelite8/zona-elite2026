@@ -164,8 +164,9 @@ app.post('/api/auth/register', async (req, res) => {
     const user = result.rows[0];
     
     // Send 6-digit verification code email
+    let emailDeliveryStatus = null;
     try {
-      await sendEmail(
+      emailDeliveryStatus = await sendEmail(
         cleanEmail, 
         'Código de Verificación - Zona Élite', 
         `Tu código de verificación es: ${code}`, 
@@ -176,6 +177,7 @@ app.post('/api/auth/register', async (req, res) => {
          </div>
          <p style="font-size:13px;color:#a1a1aa">Ingresa este código en la aplicación para activar tu cuenta.</p>`
       );
+      console.log('Register email delivery result for', cleanEmail, ':', emailDeliveryStatus);
     } catch (emailErr) {
       console.error('Verification email error:', emailErr);
     }
