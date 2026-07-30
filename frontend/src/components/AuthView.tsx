@@ -78,10 +78,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
         onNavigate(response.user.role as ViewState)
       }
     } catch (err: any) {
-      const msg = err.message ?? 'Error de conexión';
-      setError(msg.includes('no responde') || msg.includes('No se pudo conectar') 
-        ? 'El servidor está iniciando, por favor espera unos segundos e intenta de nuevo.' 
-        : msg)
+      setError(err.message || 'Error al iniciar sesión');
     } finally {
       setLoading(false)
     }
@@ -101,10 +98,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
       const response = await authApi.forgotPassword(email)
       setSuccess(response.message)
     } catch (err: any) {
-      const msg = err.message ?? 'Error al enviar el enlace';
-      setError(msg.includes('no responde') || msg.includes('No se pudo conectar') 
-        ? 'El servidor está iniciando, por favor espera unos segundos e intenta de nuevo.' 
-        : msg)
+      setError(err.message || 'Error al enviar el enlace');
     } finally {
       setLoading(false)
     }
@@ -119,10 +113,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
       onLogin(token, user)
       onNavigate(user.role as ViewState)
     } catch (err: any) {
-      const msg = err.message ?? 'Error de conexión';
-      setError(msg.includes('no responde') || msg.includes('No se pudo conectar') 
-        ? 'El servidor está iniciando, por favor espera unos segundos e intenta de nuevo.' 
-        : msg)
+      setError(err.message || 'Error al procesar la solicitud');
     } finally {
       setLoading(false)
     }

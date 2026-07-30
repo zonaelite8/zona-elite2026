@@ -47,9 +47,9 @@ async function fetchWithTimeout(url: string, init?: RequestInit, timeoutMs = 300
   } catch (err: any) {
     clearTimeout(timeout);
     if (err.name === 'AbortError') {
-      throw new Error('El servidor no responde. Puede estar iniciando, intenta de nuevo en unos segundos.');
+      throw new Error('Tiempo de espera agotado. Intenta de nuevo.');
     }
-    throw new Error('No se pudo conectar al servidor. Verifica tu conexión a internet.');
+    throw err;
   }
 }
 
@@ -59,7 +59,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { ...authHeaders(), ...init?.headers },
   });
 
-  // Mark backend as awake on any successful response
   _backendAwake = true;
 
   const text = await res.text();
@@ -73,43 +72,34 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     console.error('Failed to parse JSON:', text);
   }
 
-  // Handle token expiration/invalid token errors
+  // Handle token expiration/invalid token errors (AGENTS.md rule)
   if (res.status === 401 || res.status === 403) {
+    const errMsg = data.error || data.message || '';
     if (
-      data.error === 'Invalid or expired token' || 
-      data.error === 'Access token required' ||
-      data.error === 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.'
+      errMsg.includes('Invalid or expired token') || 
+      errMsg.includes('Access token required') ||
+      errMsg.includes('token')
     ) {
-      // Don't trigger logout for verification error, just for token errors
-      if (data.error !== 'Debes verificar tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.') {
-        window.dispatchEvent(new Event('session-expired'));
-        throw new Error('Tu sesión ha expirado, por favor inicia sesión nuevamente');
-      }
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.dispatchEvent(new Event('session-expired'));
+      throw new Error(errMsg || 'Tu sesión ha expirado, por favor inicia sesión nuevamente');
     }
   }
 
-  if (!res.ok) throw new Error(data.error ?? 'Error del servidor');
+  if (!res.ok) {
+    throw new Error(data.error || data.message || `Error (${res.status})`);
+  }
   return data as T;
 }
 
-/** GET with automatic retry (up to 2 retries for network errors) */
+/** GET with automatic retry */
 async function requestWithRetry<T>(path: string, init?: RequestInit): Promise<T> {
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      return await request<T>(path, init);
-    } catch (err: any) {
-      lastError = err;
-      // Only retry on network/timeout errors, not on API errors (4xx, 5xx with message)
-      const isNetworkError = err.message?.includes('no responde') || 
-                              err.message?.includes('No se pudo conectar') ||
-                              err.message?.includes('Failed to fetch');
-      if (!isNetworkError || attempt === 2) throw err;
-      // Wait before retry: 2s, then 4s
-      await new Promise(r => setTimeout(r, (attempt + 1) * 2000));
-    }
+  try {
+    return await request<T>(path, init);
+  } catch (err: any) {
+    throw err;
   }
-  throw lastError;
 }
 
 export const api = {
