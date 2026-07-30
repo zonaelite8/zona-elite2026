@@ -52,7 +52,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     setError('')
     setSuccess('')
     try {
-      const response = await authApi.register(name, email, password, planType)
+      await authApi.register(name, email, password, planType)
       setMode('verify')
       setSuccess(
         <div>
