@@ -53,23 +53,25 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY || Buffer.from('cmVfYkFnemNWQk
 
 function renderEmailTemplate(title, bodyHtml) {
   return `
-  <div style="background-color:#09090b;padding:40px 15px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f4f4f5;line-height:1.6;margin:0">
-    <div style="max-width:560px;margin:0 auto;background:#18181b;border:1px solid #27272a;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.7)">
+  <div style="background-color:#000000;padding:40px 15px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f59e0b;line-height:1.6;margin:0">
+    <div style="max-width:560px;margin:0 auto;background:#050505;border:2px solid #f59e0b;border-radius:18px;overflow:hidden;box-shadow:0 0 30px rgba(245,158,11,0.2)">
       <!-- Header / Logo Oficial Zona Élite -->
-      <div style="background:#09090b;padding:32px 24px;text-align:center;border-bottom:2px solid #f59e0b">
+      <div style="background:#000000;padding:32px 24px;text-align:center;border-bottom:2px solid #f59e0b">
         <a href="https://zonaelitemarinilla.com" style="text-decoration:none;display:inline-block">
           <img src="https://zonaelitemarinilla.com/logo-oficial.png" alt="Zona Élite Logo Oficial" width="220" style="display:block;margin:0 auto;border:0;outline:none;max-width:100%;height:auto" />
         </a>
       </div>
-      <!-- Content -->
-      <div style="padding:32px 28px;background:#18181b">
-        <h2 style="color:#fbbf24;margin-top:0;margin-bottom:20px;font-size:20px;font-weight:700;letter-spacing:-0.5px;text-align:center">${title}</h2>
-        ${bodyHtml}
+      <!-- Content (Negro y Amarillo) -->
+      <div style="padding:36px 28px;background:#050505;color:#f59e0b">
+        <h2 style="color:#f59e0b;margin-top:0;margin-bottom:24px;font-size:22px;font-weight:800;letter-spacing:0.5px;text-align:center;text-transform:uppercase;border-bottom:1px stroke #f59e0b">${title}</h2>
+        <div style="color:#ffffff;font-size:15px;line-height:1.7">
+          ${bodyHtml}
+        </div>
       </div>
       <!-- Footer -->
-      <div style="background:#09090b;padding:24px;text-align:center;border-top:1px solid #27272a;font-size:12px;color:#a1a1aa">
-        <p style="margin:0 0 10px 0;font-weight:500">📍 Zona Élite Marinilla — Entrenamiento de Alto Rendimiento</p>
-        <p style="margin:0"><a href="https://zonaelitemarinilla.com" style="color:#fbbf24;text-decoration:none;font-weight:700;letter-spacing:0.5px">zonaelitemarinilla.com</a></p>
+      <div style="background:#000000;padding:24px;text-align:center;border-top:2px solid #f59e0b;font-size:13px;color:#f59e0b">
+        <p style="margin:0 0 10px 0;font-weight:700">📍 Zona Élite Marinilla — Entrenamiento de Alto Rendimiento</p>
+        <p style="margin:0"><a href="https://zonaelitemarinilla.com" style="color:#f59e0b;text-decoration:underline;font-weight:800;letter-spacing:1px">zonaelitemarinilla.com</a></p>
       </div>
     </div>
   </div>`;
