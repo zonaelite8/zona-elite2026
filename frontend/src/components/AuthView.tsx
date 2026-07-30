@@ -52,8 +52,11 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     setError('')
     setSuccess('')
     try {
-      await authApi.register(name, email, password, planType)
-      setMode('verify')
+      const response: any = await authApi.register(name, email, password, planType)
+      if (response.token && response.user) {
+        onLogin(response.token, response.user)
+        onNavigate(response.user.role as ViewState)
+      }
       setSuccess(
         <div>
           <p className="mb-3">¡Registro exitoso! Ingresa el código enviado a tu correo.</p>

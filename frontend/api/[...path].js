@@ -158,35 +158,30 @@ app.post('/api/auth/register', async (req, res) => {
     const hash = await bcrypt.hash(password, salt);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const result = await pool.query(
-      'INSERT INTO users (name, email, password_hash, phone, cedula, role, is_verified, verify_token) VALUES ($1,$2,$3,$4,$5,$6,false,$7) RETURNING id, name, email, role',
+      'INSERT INTO users (name, email, password_hash, phone, cedula, role, is_verified, verify_token) VALUES ($1,$2,$3,$4,$5,$6,true,$7) RETURNING id, name, email, role',
       [name, cleanEmail, hash, phone || null, cedula || null, 'client', code]
     );
     const user = result.rows[0];
+    const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula }, JWT_SECRET, { expiresIn: '7d' });
     
-    // Send 6-digit verification code email
-    let emailDeliveryStatus = null;
+    // Send welcome email in background (non-blocking)
     try {
-      emailDeliveryStatus = await sendEmail(
+      sendEmail(
         cleanEmail, 
-        'Código de Verificación - Zona Élite', 
-        `Tu código de verificación es: ${code}`, 
+        '¡Bienvenido a Zona Élite!', 
+        `Hola ${name}, tu cuenta ha sido creada exitosamente en Zona Élite.`, 
         `<p style="font-size:16px;color:#ffffff">Hola <strong>${name}</strong>,</p>
-         <p style="color:#e4e4e7">Gracias por registrarte en <strong>Zona Élite</strong>. Tu código de verificación de 6 dígitos es:</p>
-         <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
-           <div style="font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:8px;font-weight:700;text-transform:uppercase">CÓDIGO DE ACCESO</div>
-           <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
-         </div>
-         <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
+         <p style="color:#e4e4e7">Tu cuenta ha sido creada exitosamente en <strong>Zona Élite</strong>.</p>
+         <p style="color:#e4e4e7">Ya puedes ingresar a la plataforma y reservar tus clases de entrenamiento.</p>`
       );
-      console.log('Register email delivery result for', cleanEmail, ':', emailDeliveryStatus);
     } catch (emailErr) {
-      console.error('Verification email error:', emailErr);
+      console.error('Welcome email error:', emailErr);
     }
 
-    // Send admin notification to zonaelite8@gmail.com so you know someone registered
+    // Send admin notification to zonaelite8@gmail.com
     if (cleanEmail !== 'zonaelite8@gmail.com') {
       try {
-        await sendEmail(
+        sendEmail(
           'zonaelite8@gmail.com',
           `Nuevo Registro: ${name}`,
           `Un nuevo cliente se acaba de registrar: ${name} (${cleanEmail})`,
@@ -197,7 +192,7 @@ app.post('/api/auth/register', async (req, res) => {
       }
     }
 
-    return res.status(201).json({ message: 'Registro exitoso. Revisa tu correo para ingresar el código de verificación.', user });
+    return res.status(201).json({ message: 'Registro exitoso.', token, user });
   } catch (e) { console.error('Register error:', e); return res.status(500).json({ error: 'Error en el registro', detail: e.message }); }
 });
 
