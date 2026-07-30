@@ -1,89 +1,42 @@
 const nodemailer = require('nodemailer');
 require('dotenv').config();
 
-// Configuración de Brevo API Key
-const brevoApiKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
+const emailUser = process.env.EMAIL_USER || 'zonaelite8@gmail.com';
+const emailPass = process.env.EMAIL_PASS || 'bbiljzqpincehysh';
 
-// Configuración de remitente por defecto
-const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_USER || 'zonaelite8@gmail.com';
-const senderName = process.env.BREVO_SENDER_NAME || 'Zona Élite';
-
-// Configuración de SMTP (Brevo SMTP relay o proveedor alternativo)
-let nodemailerTransporter = null;
-const smtpHost = process.env.EMAIL_HOST || 'smtp-relay.brevo.com';
-const smtpPort = parseInt(process.env.EMAIL_PORT) || 587;
-const smtpUser = process.env.BREVO_SMTP_USER || process.env.EMAIL_USER;
-const smtpPass = process.env.BREVO_SMTP_PASS || process.env.EMAIL_PASS;
-
-if (smtpUser && smtpPass) {
-  nodemailerTransporter = nodemailer.createTransport({
-    host: smtpHost,
-    port: smtpPort,
-    secure: false, // 587 usa STARTTLS
-    auth: {
-      user: smtpUser,
-      pass: smtpPass
-    }
-  });
-}
+// Configuración directa de SMTP Gmail (SSL Puerto 465)
+const transporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // SSL Directo
+  auth: {
+    user: emailUser,
+    pass: emailPass
+  }
+});
 
 /**
- * Función principal para enviar correos mediante Brevo (vía API REST v3 o SMTP Relay).
- * Se ejecuta de forma asíncrona y segura sin bloquear la aplicación.
+ * Función principal para enviar correos electrónicos mediante Gmail SMTP directo.
  */
 const sendEmail = async ({ to, subject, html, text, from }) => {
   const rawRecipients = Array.isArray(to) ? to : [to];
-  const recipients = rawRecipients.map(email => ({ email: String(email).trim() }));
+  const recipientsStr = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean).join(', ');
 
-  console.log(`[Email Service Brevo] Intentando enviar correo "${subject}" a: ${rawRecipients.join(', ')}`);
+  console.log(`[Email Service Gmail] Intentando enviar correo "${subject}" a: ${recipientsStr}`);
 
   try {
-    // 1. Enviar vía Brevo API REST v3 (Método nativo y recomendado por Brevo)
-    if (brevoApiKey) {
-      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'accept': 'application/json',
-          'content-type': 'application/json',
-          'api-key': brevoApiKey
-        },
-        body: JSON.stringify({
-          sender: { name: senderName, email: from || senderEmail },
-          to: recipients,
-          subject: subject,
-          htmlContent: html || `<p>${text}</p>`
-        })
-      });
+    const info = await transporter.sendMail({
+      from: `"Zona Élite" <${emailUser}>`,
+      to: recipientsStr,
+      subject: subject,
+      html: html || `<p>${text}</p>`,
+      text: text || ''
+    });
 
-      const data = await response.json().catch(() => ({}));
-
-      if (!response.ok) {
-        console.error('[Email Service Brevo] Brevo API devolvió un error:', data);
-        return { success: false, error: data.message || `HTTP ${response.status}` };
-      }
-
-      console.log(`[Email Service Brevo] Correo enviado exitosamente via Brevo API ID: ${data.messageId || 'OK'}`);
-      return { success: true, messageId: data.messageId };
-    }
-
-    // 2. Fallback a Brevo SMTP Relay via Nodemailer
-    if (nodemailerTransporter) {
-      const info = await nodemailerTransporter.sendMail({
-        from: `"${senderName}" <${from || senderEmail}>`,
-        to: rawRecipients.join(', '),
-        subject: subject,
-        html: html || `<p>${text}</p>`,
-        text: text || ''
-      });
-
-      console.log(`[Email Service Brevo] Correo enviado exitosamente via Brevo SMTP ID: ${info.messageId}`);
-      return { success: true, id: info.messageId };
-    }
-
-    console.warn('[Email Service Brevo] No hay credenciales de Brevo configuradas (BREVO_API_KEY o EMAIL_USER/EMAIL_PASS).');
-    return { success: false, reason: 'No transport configured' };
+    console.log(`[Email Service Gmail] Correo ENTREGADO con éxito ID: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('[Email Service Brevo] Error crítico al enviar correo:', error.message || error);
+    console.error('[Email Service Gmail] Error al enviar correo:', error.message || error);
     return { success: false, error: error.message };
   }
 };
@@ -116,7 +69,7 @@ const sendVerificationEmail = async (userEmail, userName, code) => {
 };
 
 /**
- * Plantilla y envío de correo de bienvenida al registrarse (si no requiere verificación).
+ * Plantilla y envío de correo de bienvenida al registrarse.
  */
 const sendRegistrationEmail = async (userEmail, userName) => {
   const subject = '¡Bienvenido a Zona Élite!';

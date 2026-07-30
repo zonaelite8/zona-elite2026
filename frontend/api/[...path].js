@@ -88,51 +88,44 @@ function renderEmailTemplate(title, bodyHtml) {
   </div>`;
 }
 
-const brevoKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
+const smtpGmailUser = process.env.EMAIL_USER || 'zonaelite8@gmail.com';
+const smtpGmailPass = process.env.EMAIL_PASS || 'bbiljzqpincehysh';
+
+const gmailTransporter = nodemailer.createTransport({
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: smtpGmailUser,
+    pass: smtpGmailPass
+  }
+});
 
 async function sendEmail(to, subject, text, html) {
   try {
     const rawRecipients = Array.isArray(to) ? to : [to];
-    const recipients = rawRecipients.map(e => ({ email: String(e).trim().toLowerCase() })).filter(r => r.email);
+    const recipientsStr = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean).join(', ');
     const finalHtml = renderEmailTemplate(subject, html || `<p>${text}</p>`);
 
-    if (!brevoKey) {
-      console.warn('[Vercel API] BREVO_API_KEY missing in environment variables');
-      return { status: 400, error: 'BREVO_API_KEY missing' };
-    }
-
-    const payload = {
-      sender: { name: 'Zona Élite', email: process.env.BREVO_SENDER_EMAIL || 'zonaelite8@gmail.com' },
-      to: recipients,
+    const info = await gmailTransporter.sendMail({
+      from: `"Zona Élite" <${smtpGmailUser}>`,
+      to: recipientsStr,
       subject: subject,
-      htmlContent: finalHtml
-    };
-
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'accept': 'application/json',
-        'content-type': 'application/json',
-        'api-key': brevoKey.trim()
-      },
-      body: JSON.stringify(payload)
+      text: text || '',
+      html: finalHtml
     });
 
-    const data = await response.json().catch(() => ({}));
-    console.log('[Vercel API Brevo] Response status:', response.status, data);
-    if (!response.ok) {
-      console.error('[Vercel API Brevo] Delivery failed:', data);
-    }
-    return { status: response.status, data };
+    console.log('[Vercel API Gmail] Correo entregado exitosamente MessageID:', info.messageId);
+    return { status: 200, data: { messageId: info.messageId } };
   } catch (e) {
-    console.error('[Vercel API Brevo] HTTPS Error:', e.message);
-    return { error: e.message };
+    console.error('[Vercel API Gmail] Error:', e.message);
+    return { status: 500, error: e.message };
   }
 }
 
 // ─── Express App ─────────────────────────────────────────────────────────────
 const app = express();
-app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
+app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], allowedHeaders: ['Content-Type', 'Authorization'] }));
 app.use(express.json());
 
 // Normalize request URL for Vercel Serverless rewrites
@@ -149,12 +142,12 @@ app.get('/api/debug', (req, res) => res.json({ url: req.url, originalUrl: req.or
 
 // ─── Wake / Health ───────────────────────────────────────────────────────────
 app.get('/api/wake', (req, res) => res.json({ status: 'awake', ts: Date.now() }));
-app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '5.0.0-BREVO-API-ACTIVE' }));
+app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '6.0.0-GMAIL-SMTP-ACTIVE' }));
 app.get('/api/test-email', async (req, res) => {
   try {
     const targetEmail = req.query.email || 'zonaelite8@gmail.com';
     const result = await sendEmail(targetEmail, 'Prueba Zona Elite', 'Este es un correo de prueba de Zona Elite', '<h1>Correo de prueba exitoso</h1>');
-    res.json({ result, targetEmail, emailUser });
+    res.json({ result, targetEmail, smtpGmailUser });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message, stack: e.stack });
   }
@@ -178,13 +171,13 @@ app.post(['/api/auth/register', '/auth/register'], async (req, res) => {
       [name, cleanEmail, hash, phone || null, cedula || null, 'client', code]
     );
     const user = result.rows[0];
-    
+
     // Send 6-digit verification code email via Google SSL Direct SMTP
     try {
       await sendEmail(
-        cleanEmail, 
-        'Código de Verificación - Zona Élite', 
-        `Tu código de verificación es: ${code}`, 
+        cleanEmail,
+        'Código de Verificación - Zona Élite',
+        `Tu código de verificación es: ${code}`,
         `<p style="font-size:16px;color:#ffffff">Hola <strong>${name}</strong>,</p>
          <p style="color:#e4e4e7">Gracias por registrarte en <strong>Zona Élite</strong>. Tu código de verificación de 6 dígitos es:</p>
          <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
@@ -270,15 +263,15 @@ app.post(['/api/auth/resend-code', '/auth/resend-code'], async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'No se encontró un usuario registrado con este correo.' });
     const user = result.rows[0];
     if (user.is_verified) return res.status(400).json({ error: 'Tu cuenta ya está verificada. Puedes iniciar sesión.' });
-    
+
     const code = user.verify_token || Math.floor(100000 + Math.random() * 900000).toString();
     await pool.query('UPDATE users SET verify_token = $1 WHERE id = $2', [code, user.id]);
 
     try {
       await sendEmail(
-        cleanEmail, 
-        'Código de Verificación - Zona Élite', 
-        `Tu código de verificación es: ${code}`, 
+        cleanEmail,
+        'Código de Verificación - Zona Élite',
+        `Tu código de verificación es: ${code}`,
         `<p style="font-size:16px;color:#ffffff">Hola <strong>${user.name}</strong>,</p>
          <p style="color:#e4e4e7">Tu código de verificación de 6 dígitos para <strong>Zona Élite</strong> es:</p>
          <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
@@ -534,7 +527,7 @@ app.post('/api/users', authenticateToken, isAdmin, async (req, res) => {
     if (!email) email = `cliente_${Date.now()}@zonaelite.local`;
     const exists = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
     if (exists.rows.length > 0) return res.status(400).json({ error: 'Ya existe un usuario con este correo' });
-    const result = await pool.query('INSERT INTO users (name,email,phone,cedula,role,is_verified,plan_type,payment_method,payment_amount,payment_date,expiration_date,payment_status) VALUES ($1,$2,$3,$4,$5,true,$6,$7,$8,$9,$10,$11) RETURNING *', [name, email, phone, cedula, 'client', plan_type||null, payment_method||'efectivo', payment_amount||0, payment_date||null, expiration_date||null, payment_status||'pendiente']);
+    const result = await pool.query('INSERT INTO users (name,email,phone,cedula,role,is_verified,plan_type,payment_method,payment_amount,payment_date,expiration_date,payment_status) VALUES ($1,$2,$3,$4,$5,true,$6,$7,$8,$9,$10,$11) RETURNING *', [name, email, phone, cedula, 'client', plan_type || null, payment_method || 'efectivo', payment_amount || 0, payment_date || null, expiration_date || null, payment_status || 'pendiente']);
     return res.status(201).json({ message: 'Usuario creado exitosamente', user: result.rows[0] });
   } catch (e) { return res.status(500).json({ error: 'Error creating user', detail: e.message }); }
 });
@@ -578,7 +571,7 @@ app.get('/api/plans', async (req, res) => {
 app.post('/api/plans', authenticateToken, isAdmin, async (req, res) => {
   try {
     const { name, description, default_classes, price, is_active, classes_per_week, sessions_per_month, modality_type } = req.body;
-    const result = await pool.query('INSERT INTO plans (name,description,default_classes,price,is_active,classes_per_week,sessions_per_month,modality_type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *', [name, description, default_classes||0, price||0, is_active!==false, classes_per_week||0, sessions_per_month||0, modality_type||'funcional']);
+    const result = await pool.query('INSERT INTO plans (name,description,default_classes,price,is_active,classes_per_week,sessions_per_month,modality_type) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *', [name, description, default_classes || 0, price || 0, is_active !== false, classes_per_week || 0, sessions_per_month || 0, modality_type || 'funcional']);
     return res.status(201).json(result.rows[0]);
   } catch (e) { return res.status(500).json({ error: 'Error creating plan', detail: e.message }); }
 });
