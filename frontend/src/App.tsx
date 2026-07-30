@@ -1,6 +1,5 @@
 // src/App.tsx
 
-import { useState, useEffect } from 'react'
 import { LandingView }   from '@/components/LandingView'
 import { AuthView }      from '@/components/AuthView'
 import { AdminDashboard } from '@/components/AdminDashboard'
@@ -9,25 +8,8 @@ import { useSession }    from '@/hooks/useSession'
 import { CancelBookingView } from '@/components/CancelBookingView'
 import { ResetPasswordView } from '@/components/ResetPasswordView'
 
-type BackendStatus = 'idle' | 'connecting' | 'connected' | 'error';
-
 export default function App() {
   const { user, view, setView, login, logout, checking } = useSession()
-  const [backendStatus, setBackendStatus] = useState<BackendStatus>('idle')
-
-  // Listen for backend connection status events from client.ts
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const status = (e as CustomEvent).detail as BackendStatus;
-      setBackendStatus(status);
-      // Auto-hide "connected" banner after 3 seconds
-      if (status === 'connected') {
-        setTimeout(() => setBackendStatus('idle'), 3000);
-      }
-    };
-    window.addEventListener('backend-status', handler);
-    return () => window.removeEventListener('backend-status', handler);
-  }, []);
 
   // Intercept /cancelar route
   const url = new URL(window.location.href);

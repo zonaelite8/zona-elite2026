@@ -7,19 +7,7 @@
 
 const BASE = import.meta.env.VITE_API_URL || '/api'
 
-// --- Connection state (global) ---
-let _backendAwake = false;
-let _wakePromise: Promise<boolean> | null = null;
-
-/** Emits a custom event so App.tsx can show/hide the connection banner */
-function emitConnectionStatus(status: 'connecting' | 'connected' | 'error') {
-  window.dispatchEvent(new CustomEvent('backend-status', { detail: status }));
-}
-
-/** Wake up the backend with a lightweight ping. Returns true if successful. */
 export async function wakeBackend(): Promise<boolean> {
-  _backendAwake = true;
-  emitConnectionStatus('connected');
   return true;
 }
 
@@ -58,8 +46,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { ...authHeaders(), ...init?.headers },
   });
-
-  _backendAwake = true;
 
   const text = await res.text();
   let data: any = {};
