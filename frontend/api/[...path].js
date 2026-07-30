@@ -71,6 +71,15 @@ const app = express();
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
 app.use(express.json());
 
+// Debug: log every request URL
+app.use((req, res, next) => {
+  console.log(`[DEBUG] ${req.method} url=${req.url} originalUrl=${req.originalUrl} path=${req.path} baseUrl=${req.baseUrl}`);
+  next();
+});
+
+// Debug route to check what URL format Vercel sends
+app.get('/api/debug', (req, res) => res.json({ url: req.url, originalUrl: req.originalUrl, path: req.path, baseUrl: req.baseUrl }));
+
 // ─── Wake / Health ───────────────────────────────────────────────────────────
 app.get('/api/wake', (req, res) => res.json({ status: 'awake', ts: Date.now() }));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '3.0.0' }));
