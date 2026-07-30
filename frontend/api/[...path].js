@@ -170,12 +170,13 @@ app.post('/api/auth/register', async (req, res) => {
         cleanEmail, 
         'Código de Verificación - Zona Élite', 
         `Tu código de verificación es: ${code}`, 
-        `<p style="font-size:16px">Hola <strong>${name}</strong>,</p>
-         <p>Gracias por registrarte en Zona Élite. Tu código de verificación de 6 dígitos es:</p>
-         <div style="background:#000000;border:2px stroke #f59e0b;padding:16px;text-align:center;border-radius:12px;margin:24px 0">
-           <span style="font-size:36px;font-weight:900;letter-spacing:10px;color:#f59e0b;font-family:monospace">${code}</span>
+        `<p style="font-size:16px;color:#ffffff">Hola <strong>${name}</strong>,</p>
+         <p style="color:#e4e4e7">Gracias por registrarte en <strong>Zona Élite</strong>. Tu código de verificación de 6 dígitos es:</p>
+         <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
+           <div style="font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:8px;font-weight:700;text-transform:uppercase">CÓDIGO DE ACCESO</div>
+           <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
          </div>
-         <p style="font-size:13px;color:#a1a1aa">Ingresa este código en la aplicación para activar tu cuenta.</p>`
+         <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
       );
       console.log('Register email delivery result for', cleanEmail, ':', emailDeliveryStatus);
     } catch (emailErr) {
