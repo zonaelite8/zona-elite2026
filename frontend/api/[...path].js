@@ -161,7 +161,7 @@ app.post('/api/auth/register', async (req, res) => {
     const user = result.rows[0];
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula }, JWT_SECRET, { expiresIn: '7d' });
     
-    // Send welcome email with await (required in Serverless)
+    // Send welcome email to client (with await)
     try {
       await sendEmail(
         cleanEmail, 
@@ -171,6 +171,20 @@ app.post('/api/auth/register', async (req, res) => {
       );
     } catch (emailErr) {
       console.error('Welcome email error:', emailErr);
+    }
+
+    // Send admin notification to zonaelite8@gmail.com so you know someone registered
+    if (cleanEmail !== 'zonaelite8@gmail.com') {
+      try {
+        await sendEmail(
+          'zonaelite8@gmail.com',
+          `Nuevo Registro: ${name}`,
+          `Un nuevo cliente se acaba de registrar: ${name} (${cleanEmail})`,
+          `<p style="font-size:16px"><strong>¡Nuevo cliente registrado!</strong></p><p><strong>Nombre:</strong> ${name}</p><p><strong>Correo:</strong> ${cleanEmail}</p><p><strong>Teléfono:</strong> ${phone || 'No especificado'}</p>`
+        );
+      } catch (e) {
+        console.error('Admin notification error:', e);
+      }
     }
 
     return res.status(201).json({ message: 'Registro exitoso.', token, user });
