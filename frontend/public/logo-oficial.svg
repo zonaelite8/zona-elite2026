@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 450" width="400" height="450">
+  <defs>
+    <!-- Background Dot Pattern -->
+    <pattern id="dotPattern" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+      <circle cx="8" cy="8" r="1.5" fill="#1f1f23" />
+    </pattern>
+  </defs>
+  
+  <!-- Solid Dark Background -->
+  <rect width="400" height="450" fill="#09090b" />
+  <!-- Pattern Overlay -->
+  <rect width="400" height="450" fill="url(#dotPattern)" />
+  
+  <!-- Outer Gold Rounded Box -->
+  <rect x="95" y="35" width="210" height="210" rx="46" ry="46" fill="none" stroke="#f59e0b" stroke-width="14" />
+  
+  <!-- ZE Symbol -->
+  <g stroke="#f59e0b" stroke-width="14" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- Top bar of Z -->
+    <line x1="135" y1="92" x2="265" y2="92" />
+    <!-- Diagonal of Z -->
+    <line x1="262" y1="94" x2="138" y2="192" />
+    <!-- Middle bar of E -->
+    <line x1="182" y1="142" x2="265" y2="142" />
+    <!-- Bottom bar of Z / E base -->
+    <line x1="138" y1="192" x2="265" y2="192" />
+  </g>
+
+  <!-- Z O N A Text -->
+  <g fill="none" stroke="#f59e0b" stroke-width="11" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- Z -->
+    <path d="M 95 280 L 130 280 L 95 322 L 130 322" />
+    <!-- O -->
+    <rect x="160" y="280" width="35" height="42" rx="6" />
+    <!-- N -->
+    <path d="M 225 322 L 225 280 L 260 322 L 260 280" />
+    <!-- A -->
+    <path d="M 290 322 L 308 280 L 325 322 M 297 307 L 318 307" />
+  </g>
+
+  <!-- É L I T E Text -->
+  <g fill="none" stroke="#f59e0b" stroke-width="11" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- Accent over É -->
+    <line x1="104" y1="345" x2="114" y2="337" stroke-width="7" />
+    <!-- É -->
+    <path d="M 120 360 L 95 360 L 95 402 L 120 402 M 95 381 L 115 381" />
+    <!-- L -->
+    <path d="M 152 360 L 152 402 L 175 402" />
+    <!-- I -->
+    <line x1="210" y1="360" x2="210" y2="402" />
+    <!-- T -->
+    <path d="M 235 360 L 285 360 M 260 360 L 260 402" />
+    <!-- E -->
+    <path d="M 325 360 L 300 360 L 300 402 L 325 402 M 300 381 L 320 381" />
+  </g>
+</svg>
