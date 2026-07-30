@@ -89,8 +89,11 @@ async function sendEmail(to, subject, text, html) {
       reply_to: 'zonaelite8@gmail.com',
       to: recipients,
       subject: subject,
-      text: text || '',
-      html: finalHtml
+      text: text || 'Notificación oficial de Zona Élite Marinilla',
+      html: finalHtml,
+      headers: {
+        'X-Entity-Ref-ID': `ze-${Date.now()}`
+      }
     };
 
     const response = await fetch('https://api.resend.com/emails', {
