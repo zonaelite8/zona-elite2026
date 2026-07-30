@@ -49,26 +49,51 @@ const formatTo12Hour = (timeStr) => {
   return `${h12}:${m} ${ampm}`;
 };
 
-const _k = process.env.RESEND_API_KEY || Buffer.from('cmVfYkFnemNWQkdfRVU1cUhKM2hERHc1VUM2aUp0emNFTHNr', 'base64').toString('ascii');
+const RESEND_API_KEY = process.env.RESEND_API_KEY || Buffer.from('cmVfYkFnemNWQkdfRVU1cUhKM2hERHc1VUM2aUp0emNFTHNr', 'base64').toString('ascii');
+
+function renderEmailTemplate(title, bodyHtml) {
+  return `
+  <div style="background-color:#09090b;padding:40px 15px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f4f4f5;line-height:1.6;margin:0">
+    <div style="max-width:560px;margin:0 auto;background:#18181b;border:1px solid #27272a;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.7)">
+      <!-- Header / Logo Zona Élite -->
+      <div style="background:linear-gradient(180deg, #18181b 0%, #09090b 100%);padding:36px 24px;text-align:center;border-bottom:2px solid #f59e0b">
+        <div style="display:inline-block;background:linear-gradient(135deg, #fbbf24 0%, #d97706 100%);padding:10px 24px;border-radius:12px;box-shadow:0 4px 14px rgba(245,158,11,0.35)">
+          <span style="font-size:22px;font-weight:900;letter-spacing:4px;color:#000000;text-transform:uppercase">ZONA ÉLITE</span>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:#d4d4d8;letter-spacing:3px;text-transform:uppercase;font-weight:700">GIMNASIO &amp; ENTRENAMIENTO PERSONALIZADO</div>
+      </div>
+      <!-- Content -->
+      <div style="padding:32px 28px;background:#18181b">
+        <h2 style="color:#fbbf24;margin-top:0;margin-bottom:20px;font-size:20px;font-weight:700;letter-spacing:-0.5px;text-align:center">${title}</h2>
+        ${bodyHtml}
+      </div>
+      <!-- Footer -->
+      <div style="background:#09090b;padding:24px;text-align:center;border-top:1px solid #27272a;font-size:12px;color:#a1a1aa">
+        <p style="margin:0 0 10px 0;font-weight:500">📍 Zona Élite Marinilla — Entrenamiento de Alto Rendimiento</p>
+        <p style="margin:0"><a href="https://zonaelitemarinilla.com" style="color:#fbbf24;text-decoration:none;font-weight:700;letter-spacing:0.5px">zonaelitemarinilla.com</a></p>
+      </div>
+    </div>
+  </div>`;
+}
 
 async function sendEmail(to, subject, text, html) {
   try {
     const recipients = Array.isArray(to) ? to : [to];
-    // Use verified custom domain
     const fromAddress = process.env.RESEND_FROM_EMAIL || 'Zona Elite <info@zonaelitemarinilla.com>';
+    const finalHtml = renderEmailTemplate(subject, html || `<p>${text}</p>`);
     
     const payload = {
       from: fromAddress,
       to: recipients,
       subject: subject,
       text: text || '',
-      html: html || text || ''
+      html: finalHtml
     };
 
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${_k.trim()}`,
+        'Authorization': `Bearer ${RESEND_API_KEY.trim()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)
