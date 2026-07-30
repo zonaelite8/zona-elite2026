@@ -49,18 +49,7 @@ const formatTo12Hour = (timeStr) => {
   return `${h12}:${m} ${ampm}`;
 };
 
-const emailUser = process.env.EMAIL_USER || 'zonaelite8@gmail.com';
-const emailPass = process.env.EMAIL_PASS || 'bbiljzqpincehysh';
 
-const emailTransporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: { user: emailUser, pass: emailPass },
-  connectionTimeout: 8000,
-  greetingTimeout: 5000,
-  socketTimeout: 9000
-});
 
 function renderEmailTemplate(title, bodyHtml) {
   return `
@@ -172,23 +161,19 @@ app.post(['/api/auth/register', '/auth/register'], async (req, res) => {
     );
     const user = result.rows[0];
 
-    // Send 6-digit verification code email via Google SSL Direct SMTP
-    try {
-      await sendEmail(
-        cleanEmail,
-        'Código de Verificación - Zona Élite',
-        `Tu código de verificación es: ${code}`,
-        `<p style="font-size:16px;color:#ffffff">Hola <strong>${name}</strong>,</p>
-         <p style="color:#e4e4e7">Gracias por registrarte en <strong>Zona Élite</strong>. Tu código de verificación de 6 dígitos es:</p>
-         <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
-           <div style="font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:8px;font-weight:700;text-transform:uppercase">CÓDIGO DE ACCESO</div>
-           <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
-         </div>
-         <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
-      );
-    } catch (emailErr) {
-      console.error('Verification email error:', emailErr);
-    }
+    // Send 6-digit verification code email via Google SSL Direct SMTP in background
+    sendEmail(
+      cleanEmail,
+      'Código de Verificación - Zona Élite',
+      `Tu código de verificación es: ${code}`,
+      `<p style="font-size:16px;color:#ffffff">Hola <strong>${name}</strong>,</p>
+       <p style="color:#e4e4e7">Gracias por registrarte en <strong>Zona Élite</strong>. Tu código de verificación de 6 dígitos es:</p>
+       <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
+         <div style="font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:8px;font-weight:700;text-transform:uppercase">CÓDIGO DE ACCESO</div>
+         <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
+       </div>
+       <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
+    ).catch(emailErr => console.error('Verification email error:', emailErr));
 
     // Send admin notification to zonaelite8@gmail.com
     if (cleanEmail !== 'zonaelite8@gmail.com') {
@@ -267,22 +252,19 @@ app.post(['/api/auth/resend-code', '/auth/resend-code'], async (req, res) => {
     const code = user.verify_token || Math.floor(100000 + Math.random() * 900000).toString();
     await pool.query('UPDATE users SET verify_token = $1 WHERE id = $2', [code, user.id]);
 
-    try {
-      await sendEmail(
-        cleanEmail,
-        'Código de Verificación - Zona Élite',
-        `Tu código de verificación es: ${code}`,
-        `<p style="font-size:16px;color:#ffffff">Hola <strong>${user.name}</strong>,</p>
-         <p style="color:#e4e4e7">Tu código de verificación de 6 dígitos para <strong>Zona Élite</strong> es:</p>
-         <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
-           <div style="font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:8px;font-weight:700;text-transform:uppercase">CÓDIGO DE ACCESO</div>
-           <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
-         </div>
-         <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
-      );
-    } catch (emailErr) {
-      console.error('Resend email error:', emailErr);
-    }
+    // Send 6-digit verification code in background
+    sendEmail(
+      cleanEmail,
+      'Código de Verificación - Zona Élite',
+      `Tu código de verificación es: ${code}`,
+      `<p style="font-size:16px;color:#ffffff">Hola <strong>${user.name}</strong>,</p>
+       <p style="color:#e4e4e7">Tu código de verificación de 6 dígitos para <strong>Zona Élite</strong> es:</p>
+       <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
+         <div style="font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:8px;font-weight:700;text-transform:uppercase">CÓDIGO DE ACCESO</div>
+         <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
+       </div>
+       <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
+    ).catch(emailErr => console.error('Resend email error:', emailErr));
 
     return res.json({ message: 'Se ha reenviado un nuevo código a tu correo.' });
   } catch (e) {
