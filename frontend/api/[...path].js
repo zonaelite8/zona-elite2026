@@ -127,11 +127,21 @@ app.post('/api/auth/register', async (req, res) => {
     const hash = await bcrypt.hash(password, salt);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const result = await pool.query(
-      'INSERT INTO users (name, email, password_hash, phone, cedula, role, is_verified, verify_token) VALUES ($1,$2,$3,$4,$5,$6,false,$7) RETURNING id, name, email, role',
+      'INSERT INTO users (name, email, password_hash, phone, cedula, role, is_verified, verify_token) VALUES ($1,$2,$3,$4,$5,$6,true,$7) RETURNING id, name, email, role',
       [name, email, hash, phone || null, cedula || null, 'client', code]
     );
-    await sendEmail(email, 'Código de verificación - Zona Elite', `Tu código de verificación es: ${code}`, `<h2>Tu código de verificación es:</h2><h1 style="color:#D4A017">${code}</h1>`);
-    return res.status(201).json({ message: 'Registro exitoso. Revisa tu correo para el código de verificación.', user: result.rows[0] });
+    const user = result.rows[0];
+    const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula }, JWT_SECRET, { expiresIn: '7d' });
+    
+    // Send welcome email asynchronously
+    sendEmail(
+      email, 
+      '¡Bienvenido a Zona Elite!', 
+      `Hola ${name}, tu cuenta ha sido creada exitosamente en Zona Elite.`, 
+      `<div style="font-family:sans-serif;padding:20px;background:#111;color:#fff;border-radius:8px"><h2 style="color:#D4A017">¡Bienvenido a Zona Elite, ${name}!</h2><p>Tu cuenta ha sido creada y verificada exitosamente.</p><p>Ya puedes reservar tus clases de entrenamiento desde nuestra plataforma.</p></div>`
+    ).catch(e => console.error('Welcome email error:', e));
+
+    return res.status(201).json({ message: 'Registro exitoso.', token, user });
   } catch (e) { console.error('Register error:', e); return res.status(500).json({ error: 'Error en el registro', detail: e.message }); }
 });
 

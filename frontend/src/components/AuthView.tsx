@@ -73,7 +73,7 @@ export function AuthView({ onNavigate, onLogin }: Props) {
             </a>
           </div>
         )
-      } else {
+      } else if (response.token && response.user) {
         onLogin(response.token, response.user)
         onNavigate(response.user.role as ViewState)
       }
