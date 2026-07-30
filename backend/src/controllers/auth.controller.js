@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const db = require('../config/db');
-const { sendEmail } = require('../services/email.service');
+const { sendEmail, sendVerificationEmail, sendRegistrationEmail } = require('../services/email.service');
 require('dotenv').config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -39,7 +39,7 @@ const register = async (req, res) => {
     // Generate 6-digit verification code
     const verifyToken = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Insert user (default role is client unless specified)
+    // Insert user with is_verified: false and verify_token
     const userRole = role === 'admin' ? 'admin' : 'client';
     const result = await db.query(
       'INSERT INTO users (name, email, password_hash, role, plan_type, is_verified, verify_token) VALUES ($1, $2, $3, $4, $5, false, $6) RETURNING id, name, email, role, phone, cedula, plan_type',
@@ -48,17 +48,8 @@ const register = async (req, res) => {
 
     const user = result.rows[0];
 
-    // Send verification email
-    const emailHtml = `
-      <h2>¡Bienvenido a Zona Élite, ${name}!</h2>
-      <p>Para activar tu cuenta y poder agendar tus entrenamientos, ingresa el siguiente código en la página web:</p>
-      <div style="background:#f4f4f5;padding:20px;border-radius:10px;text-align:center;margin:20px 0;">
-        <span style="font-size:32px;font-weight:bold;letter-spacing:5px;color:#f5b927;background:#18181b;padding:10px 20px;border-radius:8px;">${verifyToken}</span>
-      </div>
-      <p>Este código es confidencial. Si no solicitaste esta cuenta, puedes ignorar este correo.</p>
-    `;
-    // Send verification email in the background
-    sendEmail(email, 'Verifica tu cuenta - Zona Élite', 'Haz clic en el enlace para verificar tu cuenta', emailHtml);
+    // Send 6-digit verification code email via Brevo in background (non-blocking)
+    sendVerificationEmail(email, name, verifyToken);
 
     return res.status(210).json({
       message: 'User registered successfully',
@@ -328,12 +319,47 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Resend Verification Code
+const resendCode = async (req, res) => {
+  const { email } = req.body;
+  if (!email) {
+    return res.status(400).json({ error: 'El correo electrónico es requerido.' });
+  }
+
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+    const result = await db.query('SELECT id, name, is_verified, verify_token FROM users WHERE email = $1', [cleanEmail]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No se encontró un usuario registrado con este correo.' });
+    }
+
+    const user = result.rows[0];
+    if (user.is_verified) {
+      return res.status(400).json({ error: 'Tu cuenta ya está verificada. Puedes iniciar sesión directamente.' });
+    }
+
+    // Generate fresh 6-digit code or reuse existing code
+    const code = user.verify_token || Math.floor(100000 + Math.random() * 900000).toString();
+    await db.query('UPDATE users SET verify_token = $1 WHERE id = $2', [code, user.id]);
+
+    // Send code via Brevo in background
+    sendVerificationEmail(cleanEmail, user.name, code);
+
+    return res.json({ message: 'Se ha enviado un nuevo código de 6 dígitos a tu correo.' });
+  } catch (error) {
+    console.error('Error in resendCode:', error);
+    return res.status(500).json({ error: 'Error al reenviar el código.' });
+  }
+};
+
 module.exports = {
   register,
   login,
   googleLogin,
   updateProfile,
   verifyCode,
+  resendCode,
   forgotPassword,
   resetPassword
 };

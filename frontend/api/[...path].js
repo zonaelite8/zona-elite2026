@@ -88,40 +88,44 @@ function renderEmailTemplate(title, bodyHtml) {
   </div>`;
 }
 
-const _k = process.env.RESEND_API_KEY || Buffer.from('cmVfYkFnemNWQkdfRVU1cUhKM2hERHc1VUM2aUp0emNFTHNr', 'base64').toString('ascii');
+const brevoKey = process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY;
 
 async function sendEmail(to, subject, text, html) {
   try {
     const rawRecipients = Array.isArray(to) ? to : [to];
-    const recipients = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean);
+    const recipients = rawRecipients.map(e => ({ email: String(e).trim().toLowerCase() })).filter(r => r.email);
     const finalHtml = renderEmailTemplate(subject, html || `<p>${text}</p>`);
 
+    if (!brevoKey) {
+      console.warn('[Vercel API] BREVO_API_KEY missing in environment variables');
+      return { status: 400, error: 'BREVO_API_KEY missing' };
+    }
+
     const payload = {
-      from: 'Zona Elite <info@zonaelitemarinilla.com>',
-      reply_to: 'zonaelite8@gmail.com',
+      sender: { name: 'Zona Élite', email: process.env.BREVO_SENDER_EMAIL || 'zonaelite8@gmail.com' },
       to: recipients,
       subject: subject,
-      text: text || '',
-      html: finalHtml
+      htmlContent: finalHtml
     };
 
-    const response = await fetch('https://api.resend.com/emails', {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${_k.trim()}`,
-        'Content-Type': 'application/json'
+        'accept': 'application/json',
+        'content-type': 'application/json',
+        'api-key': brevoKey.trim()
       },
       body: JSON.stringify(payload)
     });
 
-    const data = await response.json();
-    console.log('Resend HTTPS Response status:', response.status, data);
+    const data = await response.json().catch(() => ({}));
+    console.log('[Vercel API Brevo] Response status:', response.status, data);
     if (!response.ok) {
-      console.error('Resend delivery failed:', data);
+      console.error('[Vercel API Brevo] Delivery failed:', data);
     }
     return { status: response.status, data };
   } catch (e) {
-    console.error('Resend HTTPS Error:', e.message);
+    console.error('[Vercel API Brevo] HTTPS Error:', e.message);
     return { error: e.message };
   }
 }
@@ -131,9 +135,12 @@ const app = express();
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization'] }));
 app.use(express.json());
 
-// Debug: log every request URL
+// Normalize request URL for Vercel Serverless rewrites
 app.use((req, res, next) => {
-  console.log(`[DEBUG] ${req.method} url=${req.url} originalUrl=${req.originalUrl} path=${req.path} baseUrl=${req.baseUrl}`);
+  if (req.url && !req.url.startsWith('/api/') && !req.url.startsWith('/api')) {
+    req.url = '/api' + (req.url.startsWith('/') ? '' : '/') + req.url;
+  }
+  console.log(`[DEBUG VERCEL ROUTE] ${req.method} url=${req.url} originalUrl=${req.originalUrl}`);
   next();
 });
 
@@ -156,7 +163,7 @@ app.get('/api/test-email', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH ROUTES
 // ═══════════════════════════════════════════════════════════════════════════════
-app.post('/api/auth/register', async (req, res) => {
+app.post(['/api/auth/register', '/auth/register'], async (req, res) => {
   try {
     const { name, email, password, phone, cedula } = req.body;
     if (!name || !email || !password) return res.status(400).json({ error: 'Nombre, email y contraseña son requeridos' });
@@ -208,7 +215,7 @@ app.post('/api/auth/register', async (req, res) => {
   } catch (e) { console.error('Register error:', e); return res.status(500).json({ error: 'Error en el registro', detail: e.message }); }
 });
 
-app.post('/api/auth/login', async (req, res) => {
+app.post(['/api/auth/login', '/auth/login'], async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
@@ -223,7 +230,7 @@ app.post('/api/auth/login', async (req, res) => {
   } catch (e) { console.error('Login error:', e); return res.status(500).json({ error: 'Internal server error', detail: e.message }); }
 });
 
-app.post('/api/auth/google-login', async (req, res) => {
+app.post(['/api/auth/google-login', '/auth/google-login'], async (req, res) => {
   try {
     const { credential } = req.body;
     const ticket = await googleClient.verifyIdToken({ idToken: credential, audience: process.env.GOOGLE_CLIENT_ID });
@@ -241,16 +248,54 @@ app.post('/api/auth/google-login', async (req, res) => {
   } catch (e) { console.error('Google login error:', e); return res.status(500).json({ error: 'Error en login con Google', detail: e.message }); }
 });
 
-app.post('/api/auth/verify-code', async (req, res) => {
+app.post(['/api/auth/verify-code', '/auth/verify-code'], async (req, res) => {
   try {
     const { email, code } = req.body;
     const cleanEmail = String(email).trim().toLowerCase();
     const result = await pool.query('SELECT * FROM users WHERE email = $1 AND verify_token = $2', [cleanEmail, String(code).trim()]);
     if (result.rows.length === 0) return res.status(400).json({ error: 'Código de verificación incorrecto' });
     const user = result.rows[0];
+    await pool.query('UPDATE users SET is_verified = true, verify_token = NULL WHERE id = $1', [user.id]);
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula }, JWT_SECRET, { expiresIn: '7d' });
     return res.json({ message: 'Correo verificado exitosamente', token, user: { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula } });
   } catch (e) { return res.status(500).json({ error: 'Error al verificar código', detail: e.message }); }
+});
+
+app.post(['/api/auth/resend-code', '/auth/resend-code'], async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'El correo electrónico es requerido.' });
+    const cleanEmail = String(email).trim().toLowerCase();
+    const result = await pool.query('SELECT id, name, is_verified, verify_token FROM users WHERE email = $1', [cleanEmail]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'No se encontró un usuario registrado con este correo.' });
+    const user = result.rows[0];
+    if (user.is_verified) return res.status(400).json({ error: 'Tu cuenta ya está verificada. Puedes iniciar sesión.' });
+    
+    const code = user.verify_token || Math.floor(100000 + Math.random() * 900000).toString();
+    await pool.query('UPDATE users SET verify_token = $1 WHERE id = $2', [code, user.id]);
+
+    try {
+      await sendEmail(
+        cleanEmail, 
+        'Código de Verificación - Zona Élite', 
+        `Tu código de verificación es: ${code}`, 
+        `<p style="font-size:16px;color:#ffffff">Hola <strong>${user.name}</strong>,</p>
+         <p style="color:#e4e4e7">Tu código de verificación de 6 dígitos para <strong>Zona Élite</strong> es:</p>
+         <div style="background:#000000;border:2px solid #f59e0b;padding:20px;text-align:center;border-radius:14px;margin:24px 0">
+           <div style="font-size:12px;color:#f59e0b;letter-spacing:2px;margin-bottom:8px;font-weight:700;text-transform:uppercase">CÓDIGO DE ACCESO</div>
+           <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
+         </div>
+         <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
+      );
+    } catch (emailErr) {
+      console.error('Resend email error:', emailErr);
+    }
+
+    return res.json({ message: 'Se ha reenviado un nuevo código a tu correo.' });
+  } catch (e) {
+    console.error('Resend code error:', e);
+    return res.status(500).json({ error: 'Error al reenviar el código' });
+  }
 });
 
 app.put('/api/auth/profile', authenticateToken, async (req, res) => {

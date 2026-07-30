@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { sendBookingConfirmation, sendAdminBookingNotification, sendEmail } = require('../services/email.service');
 
 const formatTo12Hour = (timeStr) => {
   if (!timeStr) return '';
@@ -110,84 +111,23 @@ const createBooking = async (req, res) => {
         [msg, 'new_booking']
       );
 
-      // Email notifications
-      const emailService = require('../services/email.service');
-      
+      // Send emails in background safely
       if (userEmail) {
-        // Send email to client
-        const clientSubject = `Confirmación de Reserva - Zona Elite`;
-        const clientHtml = `
-          <div style="background-color: #12141A; color: #F5F5F5; font-family: 'Inter', Arial, sans-serif; padding: 40px 20px; line-height: 1.6;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #171A21; border: 1px solid #1E222B; border-radius: 16px; overflow: hidden;">
-              <div style="background-color: #171A21; padding: 30px; text-align: center; border-bottom: 2px solid #F5B927;">
-                <h1 style="color: #F5B927; font-family: 'Outfit', Arial, sans-serif; margin: 0; font-size: 28px; letter-spacing: 2px; text-transform: uppercase;">ZONA ÉLITE</h1>
-              </div>
-              <div style="padding: 40px 30px;">
-                <h2 style="color: #FFFFFF; font-size: 22px; margin-top: 0;">¡Hola ${userName}!</h2>
-                <p style="color: #D1D5DB; font-size: 16px;">Tu reserva de entrenamiento <strong style="color: #F5B927; text-transform: uppercase;">${modalityUpper}</strong> ha sido confirmada.</p>
-                
-                <div style="background-color: #12141A; border: 1px solid #1E222B; border-radius: 12px; padding: 20px; margin: 30px 0;">
-                  <p style="margin: 0 0 10px 0;"><span style="color: #8D94A5; display: inline-block; width: 60px;">Fecha:</span> <strong style="color: #FFFFFF; font-size: 16px;">${dateStr}</strong></p>
-                  <p style="margin: 0;"><span style="color: #8D94A5; display: inline-block; width: 60px;">Hora:</span> <strong style="color: #FFFFFF; font-size: 16px;">${timeStr}</strong></p>
-                </div>
-                
-                
-                <div style="text-align: center; margin-top: 40px;">
-                  <p style="color: #8D94A5; font-size: 14px; margin-bottom: 15px;">¿No puedes asistir?</p>
-                  <a href="${process.env.FRONTEND_URL || 'https://zonaelitemarinilla.com'}/cancelar?token=${cancelToken}" style="background-color: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block;">Cancelar mi reserva</a>
-                </div>
-              </div>
-              <div style="background-color: #12141A; padding: 20px; text-align: center; border-top: 1px solid #1E222B;">
-                <p style="color: #8D94A5; font-size: 12px; margin: 0;">© ${new Date().getFullYear()} Zona Élite • Tu mejor versión te espera</p>
-              </div>
-            </div>
-          </div>
-        `;
-        try {
-          emailService.sendEmail(userEmail, clientSubject, '', clientHtml);
-        } catch (emailErr) {
-          console.error('Failed to send booking confirmation email to client:', emailErr);
-        }
+        sendBookingConfirmation(userEmail, userName, {
+          modality: modalityUpper,
+          dateStr,
+          timeStr,
+          cancelToken
+        });
       }
 
-      // Send email to admin
-      const adminEmail = 'zonaelite8@gmail.com';
-      const adminSubject = `Nueva Reserva: ${modalityUpper} - ${dateStr}`;
-      const adminHtml = `
-          <div style="background-color: #12141A; color: #F5F5F5; font-family: 'Inter', Arial, sans-serif; padding: 40px 20px; line-height: 1.6;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #171A21; border: 1px solid #1E222B; border-radius: 16px; overflow: hidden;">
-              <div style="background-color: #171A21; padding: 20px 30px; border-bottom: 2px solid #F5B927;">
-                <h1 style="color: #F5B927; font-family: 'Outfit', Arial, sans-serif; margin: 0; font-size: 20px; letter-spacing: 1px; text-transform: uppercase;">ZONA ÉLITE - Panel Admin</h1>
-              </div>
-              <div style="padding: 30px;">
-                <h2 style="color: #FFFFFF; font-size: 22px; margin-top: 0; border-bottom: 1px solid #1E222B; padding-bottom: 15px;">Nueva Reserva Registrada</h2>
-                
-                <div style="margin-top: 25px;">
-                  <h3 style="color: #8D94A5; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Datos del Cliente</h3>
-                  <div style="background-color: #12141A; border: 1px solid #1E222B; border-radius: 12px; padding: 20px; margin-bottom: 25px;">
-                    <p style="margin: 0 0 10px 0; color: #D1D5DB;"><strong>Nombre:</strong> ${userName}</p>
-                    <p style="margin: 0 0 10px 0; color: #D1D5DB;"><strong>Email:</strong> ${userEmail}</p>
-                    <p style="margin: 0 0 10px 0; color: #D1D5DB;"><strong>Teléfono:</strong> ${user?.phone || 'No registrado'}</p>
-                    <p style="margin: 0; color: #D1D5DB;"><strong>Cédula:</strong> ${user?.cedula || 'No registrado'}</p>
-                  </div>
-
-                  <h3 style="color: #8D94A5; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;">Detalles de la Reserva</h3>
-                  <div style="background-color: #12141A; border: 1px solid #1E222B; border-radius: 12px; padding: 20px;">
-                    <p style="margin: 0 0 10px 0; color: #D1D5DB;"><strong>Modalidad:</strong> <span style="color: #F5B927; font-weight: bold;">${modalityUpper}</span></p>
-                    <p style="margin: 0 0 10px 0; color: #D1D5DB;"><strong>Fecha:</strong> ${dateStr}</p>
-                    <p style="margin: 0; color: #D1D5DB;"><strong>Hora:</strong> ${timeStr}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-      `;
-      try {
-        emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
-      } catch (emailErr) {
-        console.error('Failed to send booking admin email:', emailErr);
-      }
-
+      sendAdminBookingNotification({
+        userName,
+        userEmail,
+        modality: modalityUpper,
+        dateStr,
+        timeStr
+      });
     } catch (notifErr) {
       console.error('Error creating booking notification:', notifErr);
     }
@@ -301,39 +241,14 @@ const createAdminBooking = async (req, res) => {
         [msg, 'new_booking']
       );
 
-      // Email notifications
-      const emailService = require('../services/email.service');
-      
+      // Send email to client
       if (userEmail) {
-        const clientSubject = `Confirmación de Reserva Manual - Zona Elite`;
-        const clientHtml = `
-          <div style="background-color: #12141A; color: #F5F5F5; font-family: 'Inter', Arial, sans-serif; padding: 40px 20px; line-height: 1.6;">
-            <div style="max-width: 600px; margin: 0 auto; background-color: #171A21; border: 1px solid #1E222B; border-radius: 16px; overflow: hidden;">
-              <div style="background-color: #171A21; padding: 30px; text-align: center; border-bottom: 2px solid #F5B927;">
-                <h1 style="color: #F5B927; font-family: 'Outfit', Arial, sans-serif; margin: 0; font-size: 28px; letter-spacing: 2px; text-transform: uppercase;">ZONA ÉLITE</h1>
-              </div>
-              <div style="padding: 40px 30px;">
-                <h2 style="color: #FFFFFF; font-size: 22px; margin-top: 0;">¡Hola ${userName}!</h2>
-                <p style="color: #D1D5DB; font-size: 16px;">Un administrador ha creado una reserva para ti. Tu entrenamiento <strong style="color: #F5B927; text-transform: uppercase;">${modalityUpper}</strong> ha sido confirmado.</p>
-                
-                <div style="background-color: #12141A; border: 1px solid #1E222B; border-radius: 12px; padding: 20px; margin: 30px 0;">
-                  <p style="margin: 0 0 10px 0;"><span style="color: #8D94A5; display: inline-block; width: 60px;">Fecha:</span> <strong style="color: #FFFFFF; font-size: 16px;">${dateStr}</strong></p>
-                  <p style="margin: 0;"><span style="color: #8D94A5; display: inline-block; width: 60px;">Hora:</span> <strong style="color: #FFFFFF; font-size: 16px;">${timeStr}</strong></p>
-                </div>
-                
-                <div style="text-align: center; margin-top: 40px;">
-                  <p style="color: #8D94A5; font-size: 14px; margin-bottom: 15px;">¿No puedes asistir?</p>
-                  <a href="${process.env.FRONTEND_URL || 'https://zonaelitemarinilla.com'}/cancelar?token=${cancelToken}" style="background-color: transparent; border: 1px solid #ef4444; color: #ef4444; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block;">Cancelar mi reserva</a>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-        try {
-          emailService.sendEmail(userEmail, clientSubject, '', clientHtml);
-        } catch (emailErr) {
-          console.error('Failed to send booking confirmation email to client:', emailErr);
-        }
+        sendBookingConfirmation(userEmail, userName, {
+          modality: modalityUpper,
+          dateStr,
+          timeStr,
+          cancelToken
+        });
       }
     } catch (notifErr) {
       console.error('Error creating booking notification:', notifErr);
@@ -411,8 +326,7 @@ const cancelBooking = async (req, res) => {
         );
 
         // Email admin
-        const emailService = require('../services/email.service');
-        const adminEmail = 'zonaelite8@gmail.com';
+        const adminEmail = process.env.ADMIN_EMAIL || 'zonaelite8@gmail.com';
         const adminSubject = `Reserva CANCELADA: ${modality} - ${dateStr}`;
         const adminHtml = `
           <div style="background-color: #12141A; color: #F5F5F5; font-family: 'Inter', Arial, sans-serif; padding: 40px 20px; line-height: 1.6;">
@@ -432,11 +346,7 @@ const cancelBooking = async (req, res) => {
             </div>
           </div>
         `;
-        try {
-          emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
-        } catch (emailErr) {
-          console.error('Failed to send admin cancellation email:', emailErr);
-        }
+        sendEmail({ to: adminEmail, subject: adminSubject, html: adminHtml });
       }
     }
 
@@ -529,8 +439,7 @@ const cancelBookingByToken = async (req, res) => {
     );
 
     // Email admin
-    const emailService = require('../services/email.service');
-    const adminEmail = 'zonaelite8@gmail.com';
+    const adminEmail = process.env.ADMIN_EMAIL || 'zonaelite8@gmail.com';
     const adminSubject = `Reserva CANCELADA: ${booking.modality} - ${dateStr}`;
     const adminHtml = `
       <div style="background-color: #12141A; color: #F5F5F5; font-family: 'Inter', Arial, sans-serif; padding: 40px 20px; line-height: 1.6;">
@@ -551,11 +460,7 @@ const cancelBookingByToken = async (req, res) => {
       </div>
     `;
     
-    try {
-      emailService.sendEmail(adminEmail, adminSubject, '', adminHtml);
-    } catch (emailErr) {
-      console.error('Failed to send cancellation email:', emailErr);
-    }
+    sendEmail({ to: adminEmail, subject: adminSubject, html: adminHtml });
 
     res.json({ message: 'Booking cancelled successfully' });
   } catch (error) {
