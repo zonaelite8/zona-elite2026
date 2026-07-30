@@ -52,7 +52,7 @@ app.get('/api/wake', (req, res) => {
 
 // Check server status
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '1.0.5' });
+  res.json({ status: 'ok', message: 'Zona Elite API is running smoothly', version: '1.0.6' });
 });
 
 // Diagnostic: check email config (instant, no sending)

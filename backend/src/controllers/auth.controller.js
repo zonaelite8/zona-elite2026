@@ -268,12 +268,13 @@ const forgotPassword = async (req, res) => {
       </div>
     `;
 
-    await sendEmail(
-      email,
-      'Restablecer contraseña - Zona Élite',
-      `Restablece tu contraseña usando el siguiente enlace: ${resetLink}`,
-      emailHtml
-    );
+    // Send email with recovery link in background (non-blocking)
+    sendEmail({
+      to: email,
+      subject: 'Restablecer contraseña - Zona Élite',
+      html: emailHtml,
+      text: `Restablece tu contraseña usando el siguiente enlace: ${resetLink}`
+    }).catch(err => console.error('Error sending reset email:', err));
 
     return res.json({ message: 'Se ha enviado un correo con las instrucciones para restablecer tu contraseña.' });
   } catch (error) {
