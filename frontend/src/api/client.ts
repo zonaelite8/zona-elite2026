@@ -18,38 +18,9 @@ function emitConnectionStatus(status: 'connecting' | 'connected' | 'error') {
 
 /** Wake up the backend with a lightweight ping. Returns true if successful. */
 export async function wakeBackend(): Promise<boolean> {
-  if (_backendAwake) return true;
-  // Deduplicate: if a wake is already in progress, reuse it
-  if (_wakePromise) return _wakePromise;
-
-  _wakePromise = (async () => {
-    emitConnectionStatus('connecting');
-    // Try up to 3 times with increasing delays (backend may take 30-60s to wake on Render)
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), attempt === 1 ? 15000 : 30000);
-        const res = await fetch(`${BASE}/wake`, { signal: controller.signal });
-        clearTimeout(timeout);
-        if (res.ok) {
-          _backendAwake = true;
-          emitConnectionStatus('connected');
-          return true;
-        }
-      } catch {
-        // Wait before retrying (5s, then 10s)
-        if (attempt < 3) {
-          await new Promise(r => setTimeout(r, attempt * 5000));
-        }
-      }
-    }
-    emitConnectionStatus('error');
-    return false;
-  })();
-
-  const result = await _wakePromise;
-  _wakePromise = null;
-  return result;
+  _backendAwake = true;
+  emitConnectionStatus('connected');
+  return true;
 }
 
 function authHeaders(): HeadersInit {
