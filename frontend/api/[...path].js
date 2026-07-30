@@ -58,19 +58,8 @@ function renderEmailTemplate(title, bodyHtml) {
       <!-- Header / Logo Oficial Zona Élite -->
       <div style="background:linear-gradient(180deg, #18181b 0%, #09090b 100%);padding:36px 24px;text-align:center;border-bottom:2px solid #f59e0b">
         <a href="https://zonaelitemarinilla.com" style="text-decoration:none;display:inline-block">
-          <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto">
-            <tr>
-              <td style="vertical-align:middle;padding-right:12px">
-                <img src="https://zonaelitemarinilla.com/favicon.svg" alt="Zona Élite Logo" width="44" height="44" style="display:block;border:0;outline:none" />
-              </td>
-              <td style="vertical-align:middle;text-align:left">
-                <div style="font-size:22px;font-weight:900;letter-spacing:3px;color:#fbbf24;line-height:1;text-transform:uppercase">ZONA</div>
-                <div style="font-size:22px;font-weight:900;letter-spacing:3px;color:#fbbf24;line-height:1;text-transform:uppercase">ÉLITE</div>
-              </td>
-            </tr>
-          </table>
+          <img src="https://zonaelitemarinilla.com/logo.svg" alt="Zona Élite Logo" width="160" height="176" style="display:block;margin:0 auto;border:0;outline:none;max-width:100%;height:auto" />
         </a>
-        <div style="margin-top:14px;font-size:11px;color:#a1a1aa;letter-spacing:3px;text-transform:uppercase;font-weight:700">GIMNASIO &amp; ENTRENAMIENTO PERSONALIZADO</div>
       </div>
       <!-- Content -->
       <div style="padding:32px 28px;background:#18181b">

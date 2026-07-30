@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 550" width="500" height="550">
+  <rect width="500" height="550" fill="#0c0c0e" />
+  
+  <!-- Icon Frame -->
+  <rect x="130" y="45" width="240" height="240" rx="42" ry="42" fill="none" stroke="#f59e0b" stroke-width="16" />
+  
+  <!-- Z & E Stylized Mark -->
+  <!-- Top bar of Z -->
+  <path d="M 175 105 L 325 105" stroke="#f59e0b" stroke-width="15" stroke-linecap="round" />
+  <!-- Diagonal of Z / ZE link -->
+  <path d="M 320 108 L 180 222" stroke="#f59e0b" stroke-width="15" stroke-linecap="round" />
+  <!-- Middle E bar extension -->
+  <path d="M 230 165 L 325 165" stroke="#f59e0b" stroke-width="15" stroke-linecap="round" />
+  <!-- Bottom bar of Z / E base -->
+  <path d="M 180 225 L 325 225" stroke="#f59e0b" stroke-width="15" stroke-linecap="round" />
+
+  <!-- ZONA Text -->
+  <g fill="none" stroke="#f59e0b" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Z -->
+    <path d="M 115 320 L 160 320 L 115 375 L 160 375" />
+    <!-- O -->
+    <rect x="195" y="320" width="45" height="55" rx="8" />
+    <!-- N -->
+    <path d="M 275 375 L 275 320 L 320 375 L 320 320" />
+    <!-- A -->
+    <path d="M 355 375 L 377 320 L 400 375 M 363 355 L 392 355" />
+  </g>
+
+  <!-- ÉLITE Text -->
+  <g fill="none" stroke="#f59e0b" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <!-- É Accent -->
+    <path d="M 125 410 L 138 398" stroke-width="8" />
+    <!-- É -->
+    <path d="M 145 425 L 115 425 L 115 480 L 145 480 M 115 452 L 140 452" />
+    <!-- L -->
+    <path d="M 185 425 L 185 480 L 215 480" />
+    <!-- I -->
+    <path d="M 255 425 L 255 480" />
+    <!-- T -->
+    <path d="M 285 425 L 345 425 M 315 425 L 315 480" />
+    <!-- E -->
+    <path d="M 400 425 L 370 425 L 370 480 L 400 480 M 370 452 L 395 452" />
+  </g>
+</svg>
