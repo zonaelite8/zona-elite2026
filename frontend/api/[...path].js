@@ -55,12 +55,22 @@ function renderEmailTemplate(title, bodyHtml) {
   return `
   <div style="background-color:#09090b;padding:40px 15px;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#f4f4f5;line-height:1.6;margin:0">
     <div style="max-width:560px;margin:0 auto;background:#18181b;border:1px solid #27272a;border-radius:16px;overflow:hidden;box-shadow:0 25px 50px -12px rgba(0,0,0,0.7)">
-      <!-- Header / Logo Zona Élite -->
+      <!-- Header / Logo Oficial Zona Élite -->
       <div style="background:linear-gradient(180deg, #18181b 0%, #09090b 100%);padding:36px 24px;text-align:center;border-bottom:2px solid #f59e0b">
-        <div style="display:inline-block;background:linear-gradient(135deg, #fbbf24 0%, #d97706 100%);padding:10px 24px;border-radius:12px;box-shadow:0 4px 14px rgba(245,158,11,0.35)">
-          <span style="font-size:22px;font-weight:900;letter-spacing:4px;color:#000000;text-transform:uppercase">ZONA ÉLITE</span>
-        </div>
-        <div style="margin-top:10px;font-size:11px;color:#d4d4d8;letter-spacing:3px;text-transform:uppercase;font-weight:700">GIMNASIO &amp; ENTRENAMIENTO PERSONALIZADO</div>
+        <a href="https://zonaelitemarinilla.com" style="text-decoration:none;display:inline-block">
+          <table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin:0 auto">
+            <tr>
+              <td style="vertical-align:middle;padding-right:12px">
+                <img src="https://zonaelitemarinilla.com/favicon.svg" alt="Zona Élite Logo" width="44" height="44" style="display:block;border:0;outline:none" />
+              </td>
+              <td style="vertical-align:middle;text-align:left">
+                <div style="font-size:22px;font-weight:900;letter-spacing:3px;color:#fbbf24;line-height:1;text-transform:uppercase">ZONA</div>
+                <div style="font-size:22px;font-weight:900;letter-spacing:3px;color:#fbbf24;line-height:1;text-transform:uppercase">ÉLITE</div>
+              </td>
+            </tr>
+          </table>
+        </a>
+        <div style="margin-top:14px;font-size:11px;color:#a1a1aa;letter-spacing:3px;text-transform:uppercase;font-weight:700">GIMNASIO &amp; ENTRENAMIENTO PERSONALIZADO</div>
       </div>
       <!-- Content -->
       <div style="padding:32px 28px;background:#18181b">
