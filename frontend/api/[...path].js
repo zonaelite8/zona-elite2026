@@ -158,22 +158,26 @@ app.post('/api/auth/register', async (req, res) => {
     const hash = await bcrypt.hash(password, salt);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const result = await pool.query(
-      'INSERT INTO users (name, email, password_hash, phone, cedula, role, is_verified, verify_token) VALUES ($1,$2,$3,$4,$5,$6,true,$7) RETURNING id, name, email, role',
+      'INSERT INTO users (name, email, password_hash, phone, cedula, role, is_verified, verify_token) VALUES ($1,$2,$3,$4,$5,$6,false,$7) RETURNING id, name, email, role',
       [name, cleanEmail, hash, phone || null, cedula || null, 'client', code]
     );
     const user = result.rows[0];
-    const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula }, JWT_SECRET, { expiresIn: '7d' });
     
-    // Send welcome email to client (with await)
+    // Send 6-digit verification code email
     try {
       await sendEmail(
         cleanEmail, 
-        '¡Bienvenido a Zona Elite!', 
-        `Hola ${name}, tu cuenta ha sido creada exitosamente en Zona Elite.`, 
-        `<p style="font-size:16px">Hola <strong>${name}</strong>,</p><p>Tu cuenta ha sido creada exitosamente en Zona Élite.</p><p>Ya puedes ingresar a la plataforma y reservar tus clases de entrenamiento.</p>`
+        'Código de Verificación - Zona Élite', 
+        `Tu código de verificación es: ${code}`, 
+        `<p style="font-size:16px">Hola <strong>${name}</strong>,</p>
+         <p>Gracias por registrarte en Zona Élite. Tu código de verificación de 6 dígitos es:</p>
+         <div style="background:#000000;border:2px stroke #f59e0b;padding:16px;text-align:center;border-radius:12px;margin:24px 0">
+           <span style="font-size:36px;font-weight:900;letter-spacing:10px;color:#f59e0b;font-family:monospace">${code}</span>
+         </div>
+         <p style="font-size:13px;color:#a1a1aa">Ingresa este código en la aplicación para activar tu cuenta.</p>`
       );
     } catch (emailErr) {
-      console.error('Welcome email error:', emailErr);
+      console.error('Verification email error:', emailErr);
     }
 
     // Send admin notification to zonaelite8@gmail.com so you know someone registered
@@ -190,7 +194,7 @@ app.post('/api/auth/register', async (req, res) => {
       }
     }
 
-    return res.status(201).json({ message: 'Registro exitoso.', token, user });
+    return res.status(201).json({ message: 'Registro exitoso. Revisa tu correo para ingresar el código de verificación.', user });
   } catch (e) { console.error('Register error:', e); return res.status(500).json({ error: 'Error en el registro', detail: e.message }); }
 });
 
