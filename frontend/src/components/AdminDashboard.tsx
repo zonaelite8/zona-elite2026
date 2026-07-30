@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { 
-  Users, AlertCircle, CheckCircle2, LogOut, X, Trash2, CalendarPlus, Bell, ChevronDown, Calendar, Clock, Menu, ClipboardList, Plus, Crown
+  Users, AlertCircle, CheckCircle2, LogOut, X, Trash2, CalendarPlus, Bell, ChevronDown, Calendar, Clock, Menu, ClipboardList, Plus, Crown, Lock, Unlock
 } from 'lucide-react';
 import { format, addDays, subDays, startOfToday } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -637,9 +637,30 @@ export function AdminDashboard({ onLogout }: any) {
                 </div>
               </div>
 
-              <div className="bg-card border border-border rounded-2xl p-6">
-                <h3 className="text-base font-bold mb-2 flex items-center gap-2"><Clock className="text-primary" size={18} /> Horarios y Atletas del día</h3>
-                {calendarBlocks.length === 0 ? <p className="text-muted-foreground text-sm text-center py-8">No hay horarios programados para este día.</p> : (
+              <div className="bg-card/90 border border-border/80 backdrop-blur-xl rounded-2xl p-6 shadow-xl">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-border/60">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-sm">
+                      <Clock size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-heading font-black text-foreground uppercase tracking-wide">Horarios y Atletas del día</h3>
+                      <p className="text-xs text-muted-foreground font-medium">Gestión en tiempo real de modalidades, cupos y reservas</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 w-fit shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    {calendarBlocks.length} {calendarBlocks.length === 1 ? 'Horario Programado' : 'Horarios Programados'}
+                  </span>
+                </div>
+
+                {calendarBlocks.length === 0 ? (
+                  <div className="text-center py-12 px-4 border-2 border-dashed border-border/60 rounded-2xl bg-secondary/10">
+                    <Clock className="mx-auto text-muted-foreground/50 mb-3" size={32} />
+                    <p className="text-muted-foreground text-sm font-medium">No hay horarios programados para esta fecha.</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">Usa la pestaña de 'Gestión de Bloques' para configurar nuevos horarios.</p>
+                  </div>
+                ) : (
                   <div className="space-y-4">
                     {calendarBlocks.map((block: any) => {
                       const blockKey = `${block.date}_${block.start_time}`;
@@ -648,128 +669,236 @@ export function AdminDashboard({ onLogout }: any) {
                       const hasPers = block.personalizado;
 
                       return (
-                        <div key={blockKey} className="border border-border rounded-xl overflow-hidden bg-background">
-                          <div className="bg-secondary/30 px-4 py-3 flex items-center justify-between cursor-pointer" onClick={() => setExpandedBlockKey(isExpanded ? null : blockKey)}>
-                            <div className="flex items-center gap-4">
-                              <span className="font-heading font-bold text-xl">{formatTo12Hour(block.start_time)}</span>
-                              <div className="flex gap-2">
-                                {hasFuerza && <span className="bg-primary/20 text-primary px-2 py-0.5 rounded text-xs font-bold uppercase">Fuerza: {block.fuerza.bookings.length}/{block.fuerza.capacity}</span>}
-                                {hasPers && <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-xs font-bold uppercase">Pers: {block.personalizado.bookings.length}/{block.personalizado.capacity}</span>}
+                        <div key={blockKey} className="group border border-border/80 hover:border-amber-500/40 rounded-2xl overflow-hidden bg-background/80 transition-all duration-300 shadow-md">
+                          {/* Card Header Bar */}
+                          <div 
+                            className="px-5 py-4 flex items-center justify-between cursor-pointer select-none bg-gradient-to-r from-secondary/40 via-secondary/20 to-background hover:from-secondary/60 transition-colors"
+                            onClick={() => setExpandedBlockKey(isExpanded ? null : blockKey)}
+                          >
+                            <div className="flex flex-wrap items-center gap-4">
+                              <div className="flex items-center gap-2 bg-background border border-amber-500/30 px-4 py-1.5 rounded-xl shadow-inner">
+                                <span className="font-heading font-black text-xl text-amber-400 tracking-wider">
+                                  {formatTo12Hour(block.start_time)}
+                                </span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2">
+                                {hasFuerza && (
+                                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all ${
+                                    block.fuerza.is_blocked 
+                                      ? 'bg-amber-500/10 border-amber-500/20 text-amber-400/70 opacity-70' 
+                                      : 'bg-amber-500/15 border-amber-500/40 text-amber-400 shadow-sm'
+                                  }`}>
+                                    <span>🏋️ Fuerza:</span>
+                                    <strong className="text-foreground font-black">{block.fuerza.bookings.length}</strong>
+                                    <span className="text-amber-500/60 font-normal">/</span>
+                                    <span>{block.fuerza.capacity}</span>
+                                  </span>
+                                )}
+
+                                {hasPers && (
+                                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 border transition-all ${
+                                    block.personalizado.is_blocked 
+                                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400/70 opacity-70' 
+                                      : 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 shadow-sm'
+                                  }`}>
+                                    <span>🎯 Pers:</span>
+                                    <strong className="text-foreground font-black">{block.personalizado.bookings.length}</strong>
+                                    <span className="text-emerald-500/60 font-normal">/</span>
+                                    <span>{block.personalizado.capacity}</span>
+                                  </span>
+                                )}
                               </div>
                             </div>
-                            <ChevronDown className={`transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+
+                            <div className={`w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-muted-foreground group-hover:text-amber-400 group-hover:border-amber-500/40 transition-all ${isExpanded ? 'rotate-180 bg-amber-500/10 border-amber-500/30 text-amber-400' : ''}`}>
+                              <ChevronDown size={18} />
+                            </div>
                           </div>
                           
+                          {/* Expanded Content */}
                           {isExpanded && (
-                            <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-6 border-t border-border">
+                            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5 border-t border-border/80 bg-secondary/10">
                               {/* Fuerza Column */}
-                              <div>
-                                <div className="flex items-center justify-between mb-3">
-                                  <h4 className="text-xs font-bold uppercase text-primary">🏋️ Entrenamientos Personalizados de Fuerza</h4>
-                                  <div className="flex items-center gap-1">
-                                    {hasFuerza ? (
-                                      <>
+                              <div className="bg-background/90 border border-amber-500/20 rounded-2xl p-4.5 flex flex-col justify-between shadow-sm">
+                                <div>
+                                  <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-border/60">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-lg">🏋️</span>
+                                      <div>
+                                        <h4 className="text-xs font-black uppercase text-amber-400 tracking-wide">Personalizado Fuerza</h4>
+                                        <span className="text-[10px] text-muted-foreground font-medium">Capacidad: {block.fuerza?.capacity || 5} Atletas</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                      {hasFuerza ? (
+                                        <>
+                                          <button
+                                            onClick={() => handleToggleModality(block.fuerza.id)}
+                                            title={block.fuerza.is_blocked ? 'Activar modalidad' : 'Bloquear modalidad'}
+                                            className={`flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-1 rounded-lg border transition-all ${
+                                              block.fuerza.is_blocked
+                                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 shadow-sm'
+                                                : 'border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 shadow-sm'
+                                            }`}
+                                          >
+                                            {block.fuerza.is_blocked ? (
+                                              <><Unlock size={12} /> Activar</>
+                                            ) : (
+                                              <><Lock size={12} /> Bloquear</>
+                                            )}
+                                          </button>
+                                          <button
+                                            onClick={() => handleRemoveModality(block.fuerza.id, 'Fuerza')}
+                                            title="Eliminar modalidad Fuerza"
+                                            className="flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-1 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shadow-sm"
+                                          >
+                                            <Trash2 size={12} /> Quitar
+                                          </button>
+                                        </>
+                                      ) : (
                                         <button
-                                          onClick={() => handleToggleModality(block.fuerza.id)}
-                                          title={block.fuerza.is_blocked ? 'Activar modalidad' : 'Bloquear modalidad'}
-                                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-colors ${
-                                            block.fuerza.is_blocked
-                                              ? 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
-                                              : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
-                                          }`}
+                                          onClick={() => handleAddModality(block, 'fuerza')}
+                                          className="flex items-center gap-1 text-[11px] font-extrabold px-3 py-1 rounded-lg border border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 transition-all shadow-sm"
                                         >
-                                          {block.fuerza.is_blocked ? '🔓 Activar' : '🔒 Bloquear'}
+                                          <Plus size={12} /> Agregar
                                         </button>
-                                        <button
-                                          onClick={() => handleRemoveModality(block.fuerza.id, 'Fuerza')}
-                                          title="Eliminar modalidad Fuerza"
-                                          className="text-[10px] font-bold px-2 py-1 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-                                        >
-                                          ✕ Quitar
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleAddModality(block, 'fuerza')}
-                                        className="text-[10px] font-bold px-2 py-1 rounded-lg border border-primary/40 text-primary hover:bg-primary/10 transition-colors"
-                                      >
-                                        + Agregar
-                                      </button>
-                                    )}
+                                      )}
+                                    </div>
                                   </div>
+
+                                  {!hasFuerza ? (
+                                    <p className="text-xs text-muted-foreground italic text-center py-4">Modalidad no habilitada para este horario</p>
+                                  ) : block.fuerza.is_blocked ? (
+                                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center my-2">
+                                      <p className="text-xs font-bold text-amber-400 flex items-center justify-center gap-1.5">
+                                        <Lock size={14} /> Modalidad Bloqueada
+                                      </p>
+                                      <p className="text-[11px] text-amber-300/70 mt-0.5">No aparecerá en el sistema de reservas para clientes</p>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {block.fuerza.bookings.length > 0 ? (
+                                        <ul className="space-y-2 mb-3">
+                                          {block.fuerza.bookings.map((b: any) => (
+                                            <li key={b.booking_id} className="flex justify-between items-center bg-card border border-border/80 p-2.5 rounded-xl hover:border-amber-500/30 transition-colors shadow-sm">
+                                              <div className="flex items-center gap-2.5">
+                                                <div className="w-7 h-7 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-xs">
+                                                  {b.user_name ? b.user_name.charAt(0).toUpperCase() : 'A'}
+                                                </div>
+                                                <span className="text-xs font-bold text-foreground">{b.user_name}</span>
+                                              </div>
+                                              <button onClick={() => handleCancelBooking(b.booking_id)} className="text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded-lg transition-colors flex items-center gap-1">
+                                                <X size={12} /> Cancelar
+                                              </button>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      ) : (
+                                        <p className="text-xs text-muted-foreground italic text-center py-3 mb-2">Sin atletas agendados en este grupo</p>
+                                      )}
+
+                                      <button 
+                                        onClick={() => { setUserSelectData({ slotId: block.fuerza.id, modality: 'Fuerza' }); setSelectedUserIds([]); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} 
+                                        className="w-full border-2 border-dashed border-amber-500/40 hover:border-amber-500/70 bg-amber-500/5 hover:bg-amber-500/15 text-amber-400 transition-all rounded-xl py-2.5 text-xs font-extrabold uppercase tracking-wider flex justify-center items-center gap-2 shadow-sm"
+                                      >
+                                        <Plus size={15} /> Añadir Atleta / Cliente
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
-                                {!hasFuerza ? <p className="text-xs text-muted-foreground italic">No disponible</p> : block.fuerza.is_blocked ? <p className="text-xs text-amber-400/80 italic">🔒 Bloqueada — no aparece a clientes</p> : (
-                                  <>
-                                    {block.fuerza.bookings.length > 0 && (
-                                      <ul className="space-y-2 mb-3">
-                                        {block.fuerza.bookings.map((b: any) => (
-                                          <li key={b.booking_id} className="flex justify-between items-center bg-card border border-border p-3 rounded-lg">
-                                            <div className="text-sm font-bold">{b.user_name}</div>
-                                            <button onClick={() => handleCancelBooking(b.booking_id)} className="text-xs text-red-500 hover:underline">Cancelar</button>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                    <button onClick={() => { setUserSelectData({ slotId: block.fuerza.id, modality: 'Fuerza' }); setSelectedUserIds([]); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} className="w-full border border-dashed border-primary/50 text-primary hover:bg-primary/10 transition-colors rounded-lg py-2 text-xs font-bold uppercase flex justify-center items-center gap-1">
-                                      <Plus size={14} /> Añadir Cliente / Usuario
-                                    </button>
-                                  </>
-                                )}
                               </div>
 
                               {/* Personalizado Column */}
-                              <div>
-                                <div className="flex items-center justify-between mb-3">
-                                  <h4 className="text-xs font-bold uppercase text-emerald-400">🎯 Entrenamiento Personalizado de Deportistas</h4>
-                                  <div className="flex items-center gap-1">
-                                    {hasPers ? (
-                                      <>
+                              <div className="bg-background/90 border border-emerald-500/20 rounded-2xl p-4.5 flex flex-col justify-between shadow-sm">
+                                <div>
+                                  <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-border/60">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-lg">🎯</span>
+                                      <div>
+                                        <h4 className="text-xs font-black uppercase text-emerald-400 tracking-wide">Personalizado Deportistas</h4>
+                                        <span className="text-[10px] text-muted-foreground font-medium">Capacidad: {block.personalizado?.capacity || 2} Atletas</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-1.5">
+                                      {hasPers ? (
+                                        <>
+                                          <button
+                                            onClick={() => handleToggleModality(block.personalizado.id)}
+                                            title={block.personalizado.is_blocked ? 'Activar modalidad' : 'Bloquear modalidad'}
+                                            className={`flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-1 rounded-lg border transition-all ${
+                                              block.personalizado.is_blocked
+                                                ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 shadow-sm'
+                                                : 'border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 shadow-sm'
+                                            }`}
+                                          >
+                                            {block.personalizado.is_blocked ? (
+                                              <><Unlock size={12} /> Activar</>
+                                            ) : (
+                                              <><Lock size={12} /> Bloquear</>
+                                            )}
+                                          </button>
+                                          <button
+                                            onClick={() => handleRemoveModality(block.personalizado.id, 'Personalizado')}
+                                            title="Eliminar modalidad Personalizado"
+                                            className="flex items-center gap-1 text-[11px] font-extrabold px-2.5 py-1 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all shadow-sm"
+                                          >
+                                            <Trash2 size={12} /> Quitar
+                                          </button>
+                                        </>
+                                      ) : (
                                         <button
-                                          onClick={() => handleToggleModality(block.personalizado.id)}
-                                          title={block.personalizado.is_blocked ? 'Activar modalidad' : 'Bloquear modalidad'}
-                                          className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-colors ${
-                                            block.personalizado.is_blocked
-                                              ? 'border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10'
-                                              : 'border-amber-500/40 text-amber-400 hover:bg-amber-500/10'
-                                          }`}
+                                          onClick={() => handleAddModality(block, 'personalizado')}
+                                          className="flex items-center gap-1 text-[11px] font-extrabold px-3 py-1 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all shadow-sm"
                                         >
-                                          {block.personalizado.is_blocked ? '🔓 Activar' : '🔒 Bloquear'}
+                                          <Plus size={12} /> Agregar
                                         </button>
-                                        <button
-                                          onClick={() => handleRemoveModality(block.personalizado.id, 'Personalizado')}
-                                          title="Eliminar modalidad Personalizado"
-                                          className="text-[10px] font-bold px-2 py-1 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors"
-                                        >
-                                          ✕ Quitar
-                                        </button>
-                                      </>
-                                    ) : (
-                                      <button
-                                        onClick={() => handleAddModality(block, 'personalizado')}
-                                        className="text-[10px] font-bold px-2 py-1 rounded-lg border border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 transition-colors"
-                                      >
-                                        + Agregar
-                                      </button>
-                                    )}
+                                      )}
+                                    </div>
                                   </div>
+
+                                  {!hasPers ? (
+                                    <p className="text-xs text-muted-foreground italic text-center py-4">Modalidad no habilitada para este horario</p>
+                                  ) : block.personalizado.is_blocked ? (
+                                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center my-2">
+                                      <p className="text-xs font-bold text-amber-400 flex items-center justify-center gap-1.5">
+                                        <Lock size={14} /> Modalidad Bloqueada
+                                      </p>
+                                      <p className="text-[11px] text-amber-300/70 mt-0.5">No aparecerá en el sistema de reservas para clientes</p>
+                                    </div>
+                                  ) : (
+                                    <>
+                                      {block.personalizado.bookings.length > 0 ? (
+                                        <ul className="space-y-2 mb-3">
+                                          {block.personalizado.bookings.map((b: any) => (
+                                            <li key={b.booking_id} className="flex justify-between items-center bg-card border border-border/80 p-2.5 rounded-xl hover:border-emerald-500/30 transition-colors shadow-sm">
+                                              <div className="flex items-center gap-2.5">
+                                                <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xs">
+                                                  {b.user_name ? b.user_name.charAt(0).toUpperCase() : 'A'}
+                                                </div>
+                                                <span className="text-xs font-bold text-foreground">{b.user_name}</span>
+                                              </div>
+                                              <button onClick={() => handleCancelBooking(b.booking_id)} className="text-[11px] font-bold text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded-lg transition-colors flex items-center gap-1">
+                                                <X size={12} /> Cancelar
+                                              </button>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      ) : (
+                                        <p className="text-xs text-muted-foreground italic text-center py-3 mb-2">Sin atletas agendados en este grupo</p>
+                                      )}
+
+                                      <button 
+                                        onClick={() => { setUserSelectData({ slotId: block.personalizado.id, modality: 'Personalizado' }); setSelectedUserIds([]); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} 
+                                        className="w-full border-2 border-dashed border-emerald-500/40 hover:border-emerald-500/70 bg-emerald-500/5 hover:bg-emerald-500/15 text-emerald-400 transition-all rounded-xl py-2.5 text-xs font-extrabold uppercase tracking-wider flex justify-center items-center gap-2 shadow-sm"
+                                      >
+                                        <Plus size={15} /> Añadir Atleta / Cliente
+                                      </button>
+                                    </>
+                                  )}
                                 </div>
-                                {!hasPers ? <p className="text-xs text-muted-foreground italic">No disponible</p> : block.personalizado.is_blocked ? <p className="text-xs text-amber-400/80 italic">🔒 Bloqueada — no aparece a clientes</p> : (
-                                  <>
-                                    {block.personalizado.bookings.length > 0 && (
-                                      <ul className="space-y-2 mb-3">
-                                        {block.personalizado.bookings.map((b: any) => (
-                                          <li key={b.booking_id} className="flex justify-between items-center bg-card border border-border p-3 rounded-lg">
-                                            <div className="text-sm font-bold">{b.user_name}</div>
-                                            <button onClick={() => handleCancelBooking(b.booking_id)} className="text-xs text-red-500 hover:underline">Cancelar</button>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                    <button onClick={() => { setUserSelectData({ slotId: block.personalizado.id, modality: 'Personalizado' }); setSelectedUserIds([]); setIsCreatingNewUser(false); setShowUserSelectModal(true); }} className="w-full border border-dashed border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10 transition-colors rounded-lg py-2 text-xs font-bold uppercase flex justify-center items-center gap-1">
-                                      <Plus size={14} /> Añadir Cliente / Usuario
-                                    </button>
-                                  </>
-                                )}
                               </div>
                             </div>
                           )}
