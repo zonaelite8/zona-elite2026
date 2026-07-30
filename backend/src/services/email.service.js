@@ -17,8 +17,23 @@ const transporter = nodemailer.createTransport({
 
 /**
  * Función principal para enviar correos electrónicos mediante Gmail SMTP directo.
+ * Soporta tanto llamados con objeto ({ to, subject, html, text }) como posicionales (to, subject, text, html).
  */
-const sendEmail = async ({ to, subject, html, text, from }) => {
+const sendEmail = async (toArg, subjectArg, textArg, htmlArg) => {
+  let to, subject, text, html;
+
+  if (typeof toArg === 'object' && toArg !== null && !Array.isArray(toArg) && toArg.to) {
+    to = toArg.to;
+    subject = toArg.subject;
+    text = toArg.text;
+    html = toArg.html;
+  } else {
+    to = toArg;
+    subject = subjectArg;
+    text = textArg;
+    html = htmlArg;
+  }
+
   const rawRecipients = Array.isArray(to) ? to : [to];
   const recipientsStr = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean).join(', ');
 
@@ -28,8 +43,8 @@ const sendEmail = async ({ to, subject, html, text, from }) => {
     const info = await transporter.sendMail({
       from: `"Zona Élite" <${emailUser}>`,
       to: recipientsStr,
-      subject: subject,
-      html: html || `<p>${text}</p>`,
+      subject: subject || 'Zona Élite Notificación',
+      html: html || `<p>${text || ''}</p>`,
       text: text || ''
     });
 

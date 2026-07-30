@@ -295,29 +295,51 @@ app.put('/api/auth/profile', authenticateToken, async (req, res) => {
   } catch (e) { return res.status(500).json({ error: 'Error al actualizar perfil', detail: e.message }); }
 });
 
-app.post('/api/auth/forgot-password', async (req, res) => {
+app.post(['/api/auth/forgot-password', '/auth/forgot-password'], async (req, res) => {
   try {
-    const { email } = req.body;
-    const user = (await pool.query('SELECT * FROM users WHERE email = $1', [email])).rows[0];
-    if (!user) return res.json({ message: 'Si el correo existe, recibirás un enlace de recuperación' });
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ error: 'El correo electrónico es requerido.' });
+    const cleanEmail = String(email).trim().toLowerCase();
+    const user = (await pool.query('SELECT * FROM users WHERE email = $1', [cleanEmail])).rows[0];
+    if (!user) return res.json({ message: 'Si el correo está registrado, recibirás las instrucciones de recuperación.' });
+
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expires = new Date(Date.now() + 3600000);
     await pool.query('UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3', [resetToken, expires, user.id]);
-    const resetUrl = `https://zonaelitemarinilla.com/reset-password?token=${resetToken}`;
-    await sendEmail(email, 'Recuperar Contraseña - Zona Elite', '', `<h2>Recuperar Contraseña</h2><p>Haz clic en el siguiente enlace:</p><a href="${resetUrl}">${resetUrl}</a><p>Este enlace expira en 1 hora.</p>`);
-    return res.json({ message: 'Si el correo existe, recibirás un enlace de recuperación' });
-  } catch (e) { return res.status(500).json({ error: 'Error al procesar solicitud', detail: e.message }); }
+
+    const origin = req.headers.origin || 'https://zonaelitemarinilla.com';
+    const resetUrl = `${origin}/restablecer?token=${resetToken}`;
+
+    sendEmail(
+      cleanEmail,
+      'Restablecer Contraseña - Zona Élite',
+      `Restablece tu contraseña usando este enlace: ${resetUrl}`,
+      `<p style="font-size:16px;color:#ffffff">Hola <strong>${user.name}</strong>,</p>
+       <p style="color:#e4e4e7">Recibimos una solicitud para restablecer tu contraseña en <strong>Zona Élite</strong>.</p>
+       <div style="margin:24px 0;text-align:center">
+         <a href="${resetUrl}" style="background:#f59e0b;color:#000000;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:800;font-size:15px;display:inline-block">Restablecer Contraseña</a>
+       </div>
+       <p style="font-size:13px;color:#a1a1aa;text-align:center">Este enlace expira en 1 hora.</p>`
+    ).catch(emailErr => console.error('Forgot password email error:', emailErr));
+
+    return res.json({ message: 'Si el correo está registrado, recibirás las instrucciones de recuperación.' });
+  } catch (e) { return res.status(500).json({ error: 'Error al procesar la solicitud', detail: e.message }); }
 });
 
-app.post('/api/auth/reset-password', async (req, res) => {
+app.post(['/api/auth/reset-password', '/auth/reset-password'], async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const { token, password, newPassword } = req.body || {};
+    const passToUse = password || newPassword;
+    if (!token || !passToUse) return res.status(400).json({ error: 'Token y nueva contraseña son requeridos' });
+
     const user = (await pool.query('SELECT * FROM users WHERE reset_token = $1 AND reset_token_expires > NOW()', [token])).rows[0];
-    if (!user) return res.status(400).json({ error: 'Token inválido o expirado' });
+    if (!user) return res.status(400).json({ error: 'El enlace es inválido o ha expirado.' });
+
     const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(newPassword, salt);
+    const hash = await bcrypt.hash(passToUse, salt);
     await pool.query('UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2', [hash, user.id]);
-    return res.json({ message: 'Contraseña actualizada exitosamente' });
+
+    return res.json({ message: 'Tu contraseña ha sido restablecida exitosamente.' });
   } catch (e) { return res.status(500).json({ error: 'Error al restablecer contraseña', detail: e.message }); }
 });
 
