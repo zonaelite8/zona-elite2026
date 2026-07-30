@@ -26,6 +26,9 @@ export const authApi = {
   verifyCode: (email: string, code: string) =>
     api.post<AuthResponse>('/auth/verify-code', { email, code }),
 
+  resendCode: (email: string) =>
+    api.post<{ message: string }>('/auth/resend-code', { email }),
+
   forgotPassword: (email: string) =>
     api.post<{ message: string }>('/auth/forgot-password', { email }),
 

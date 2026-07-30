@@ -244,9 +244,9 @@ app.post('/api/auth/google-login', async (req, res) => {
 app.post('/api/auth/verify-code', async (req, res) => {
   try {
     const { email, code } = req.body;
-    const result = await pool.query('SELECT * FROM users WHERE email = $1 AND verify_token = $2', [email, code]);
+    const cleanEmail = String(email).trim().toLowerCase();
+    const result = await pool.query('SELECT * FROM users WHERE email = $1 AND verify_token = $2', [cleanEmail, String(code).trim()]);
     if (result.rows.length === 0) return res.status(400).json({ error: 'Código de verificación incorrecto' });
-    await pool.query('UPDATE users SET is_verified = true, verify_token = NULL WHERE email = $1', [email]);
     const user = result.rows[0];
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula }, JWT_SECRET, { expiresIn: '7d' });
     return res.json({ message: 'Correo verificado exitosamente', token, user: { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula } });

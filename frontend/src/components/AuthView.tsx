@@ -90,6 +90,24 @@ export function AuthView({ onNavigate, onLogin }: Props) {
     await submit(() => authApi.verifyCode(email, code))
   }
 
+  async function handleResendCode() {
+    if (!email) {
+      setError('Por favor ingresa tu correo para reenviar el código.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const res = await authApi.resendCode(email);
+      setSuccess(res.message || 'Se ha reenviado el código a tu correo.');
+    } catch (err: any) {
+      setError(err.message || 'Error al reenviar el código.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function handleRecover(e: FormEvent) {
     e.preventDefault()
     setLoading(true)
@@ -312,12 +330,23 @@ export function AuthView({ onNavigate, onLogin }: Props) {
                 </button>
               </form>
 
-              <button
-                onClick={() => setMode('login')}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto"
-              >
-                <ArrowLeft size={14} /> Volver al Login
-              </button>
+              <div className="flex flex-col gap-2 pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={handleResendCode}
+                  disabled={loading}
+                  className="text-xs text-primary hover:underline font-semibold"
+                >
+                  ¿No recibiste el correo? Clic aquí para Reenviar Código
+                </button>
+
+                <button
+                  onClick={() => setMode('login')}
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mx-auto mt-2"
+                >
+                  <ArrowLeft size={14} /> Volver al Login
+                </button>
+              </div>
             </div>
           )}
 
