@@ -79,8 +79,8 @@ function renderEmailTemplate(title, bodyHtml) {
 
 async function sendEmail(to, subject, text, html) {
   try {
-    const recipients = Array.isArray(to) ? to : [to];
-    // Sender as Zona Elite with reply_to to zonaelite8@gmail.com
+    const rawRecipients = Array.isArray(to) ? to : [to];
+    const recipients = rawRecipients.map(e => String(e).trim().toLowerCase()).filter(Boolean);
     const fromAddress = process.env.RESEND_FROM_EMAIL || 'Zona Elite <info@zonaelitemarinilla.com>';
     const finalHtml = renderEmailTemplate(subject, html || `<p>${text}</p>`);
     
@@ -104,6 +104,9 @@ async function sendEmail(to, subject, text, html) {
 
     const data = await response.json();
     console.log('Resend Response status:', response.status, data);
+    if (!response.ok) {
+      console.error('Resend delivery failed:', data);
+    }
     return { status: response.status, data };
   } catch (e) {
     console.error('Resend fetch error:', e.message);
@@ -145,14 +148,15 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { name, email, password, phone, cedula } = req.body;
     if (!name || !email || !password) return res.status(400).json({ error: 'Nombre, email y contraseña son requeridos' });
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    const cleanEmail = email.trim().toLowerCase();
+    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [cleanEmail]);
     if (existing.rows.length > 0) return res.status(400).json({ error: 'Este correo ya está registrado' });
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(password, salt);
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const result = await pool.query(
       'INSERT INTO users (name, email, password_hash, phone, cedula, role, is_verified, verify_token) VALUES ($1,$2,$3,$4,$5,$6,true,$7) RETURNING id, name, email, role',
-      [name, email, hash, phone || null, cedula || null, 'client', code]
+      [name, cleanEmail, hash, phone || null, cedula || null, 'client', code]
     );
     const user = result.rows[0];
     const token = jwt.sign({ id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone, cedula: user.cedula }, JWT_SECRET, { expiresIn: '7d' });
@@ -160,10 +164,10 @@ app.post('/api/auth/register', async (req, res) => {
     // Send welcome email with await (required in Serverless)
     try {
       await sendEmail(
-        email, 
+        cleanEmail, 
         '¡Bienvenido a Zona Elite!', 
         `Hola ${name}, tu cuenta ha sido creada exitosamente en Zona Elite.`, 
-        `<div style="font-family:sans-serif;padding:20px;background:#111;color:#fff;border-radius:8px"><h2 style="color:#D4A017">¡Bienvenido a Zona Elite, ${name}!</h2><p>Tu cuenta ha sido creada exitosamente.</p><p>Ya puedes reservar tus clases de entrenamiento desde nuestra plataforma.</p></div>`
+        `<p style="font-size:16px">Hola <strong>${name}</strong>,</p><p>Tu cuenta ha sido creada exitosamente en Zona Élite.</p><p>Ya puedes ingresar a la plataforma y reservar tus clases de entrenamiento.</p>`
       );
     } catch (emailErr) {
       console.error('Welcome email error:', emailErr);
