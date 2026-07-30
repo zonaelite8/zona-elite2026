@@ -51,21 +51,40 @@ const formatTo12Hour = (timeStr) => {
 
 let emailTransporter = null;
 const emailUser = process.env.EMAIL_USER || 'zonaelite8@gmail.com';
-const emailPass = process.env.EMAIL_PASS;
+const emailPass = process.env.EMAIL_PASS || 'bbiljzqpincehysh';
+
 if (emailUser && emailPass) {
   emailTransporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', port: 465, secure: true,
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: { user: emailUser, pass: emailPass },
-    connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
 }
 
 async function sendEmail(to, subject, text, html) {
   try {
-    if (!emailTransporter) return false;
-    await emailTransporter.sendMail({ from: `"Zona Elite" <${emailUser}>`, to: Array.isArray(to) ? to : [to], subject, html: html || text });
+    if (!emailTransporter) {
+      console.error('Email error: No transporter initialized (missing credentials)');
+      return false;
+    }
+    const info = await emailTransporter.sendMail({
+      from: `"Zona Elite" <${emailUser}>`,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      text: text || '',
+      html: html || text
+    });
+    console.log('Email sent successfully:', info.messageId);
     return true;
-  } catch (e) { console.error('Email error:', e.message); return false; }
+  } catch (e) {
+    console.error('Email send error:', e.message, e.stack);
+    return false;
+  }
 }
 
 // ─── Express App ─────────────────────────────────────────────────────────────
@@ -85,6 +104,15 @@ app.get('/api/debug', (req, res) => res.json({ url: req.url, originalUrl: req.or
 // ─── Wake / Health ───────────────────────────────────────────────────────────
 app.get('/api/wake', (req, res) => res.json({ status: 'awake', ts: Date.now() }));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '3.0.0' }));
+app.get('/api/test-email', async (req, res) => {
+  try {
+    const targetEmail = req.query.email || 'zonaelite8@gmail.com';
+    const sent = await sendEmail(targetEmail, 'Prueba Zona Elite', 'Este es un correo de prueba', '<h1>Correo de prueba exitoso</h1>');
+    res.json({ success: sent, targetEmail, emailUser });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH ROUTES
