@@ -385,12 +385,89 @@ app.get('/api/slots/admin', authenticateToken, isAdmin, async (req, res) => {
 
 app.post('/api/slots', authenticateToken, isAdmin, async (req, res) => {
   try {
-    const { modality, date, start_time, end_time, capacity } = req.body;
-    const existing = await pool.query('SELECT id FROM slots WHERE modality=$1 AND date=$2 AND start_time=$3', [modality, date, start_time]);
-    if (existing.rows.length > 0) return res.status(400).json({ error: 'Ya existe un horario con esa configuración' });
-    const result = await pool.query('INSERT INTO slots (modality,date,start_time,end_time,capacity) VALUES ($1,$2,$3,$4,$5) RETURNING *', [modality, date, start_time, end_time, capacity]);
-    return res.status(201).json(result.rows[0]);
-  } catch (e) { return res.status(500).json({ error: 'Error creating slot', detail: e.message }); }
+    const {
+      modality,
+      date,
+      dates,
+      start_time,
+      end_time,
+      timeBlocks,
+      create_fuerza = true,
+      create_personalizado = true,
+      capacity
+    } = req.body;
+
+    const dateList = dates && Array.isArray(dates) && dates.length > 0
+      ? dates
+      : (date ? [date] : []);
+
+    const blockList = timeBlocks && Array.isArray(timeBlocks) && timeBlocks.length > 0
+      ? timeBlocks
+      : (start_time && end_time ? [{ start_time, end_time }] : []);
+
+    if (dateList.length === 0) {
+      return res.status(400).json({ error: 'Se requiere al menos una fecha.' });
+    }
+
+    if (blockList.length === 0) {
+      return res.status(400).json({ error: 'Se requiere al menos un bloque de horario.' });
+    }
+
+    const created = [];
+    const skipped = [];
+
+    for (const d of dateList) {
+      for (const tb of blockList) {
+        const st = tb.start_time.length === 5 ? `${tb.start_time}:00` : tb.start_time;
+        const et = tb.end_time.length === 5 ? `${tb.end_time}:00` : tb.end_time;
+
+        if (modality) {
+          const cap = capacity || (modality === 'fuerza' ? 6 : 2);
+          const check = await pool.query('SELECT id FROM slots WHERE modality=$1 AND date=$2 AND start_time=$3', [modality, d, st]);
+          if (check.rows.length === 0) {
+            const r = await pool.query('INSERT INTO slots (modality,date,start_time,end_time,capacity) VALUES ($1,$2,$3,$4,$5) RETURNING *', [modality, d, st, et, cap]);
+            created.push(r.rows[0]);
+          } else {
+            skipped.push({ modality, date: d, start_time: st });
+          }
+        } else {
+          if (create_fuerza) {
+            const cap = capacity || 6;
+            const check = await pool.query('SELECT id FROM slots WHERE modality=$1 AND date=$2 AND start_time=$3', ['fuerza', d, st]);
+            if (check.rows.length === 0) {
+              const r = await pool.query('INSERT INTO slots (modality,date,start_time,end_time,capacity) VALUES ($1,$2,$3,$4,$5) RETURNING *', ['fuerza', d, st, et, cap]);
+              created.push(r.rows[0]);
+            } else {
+              skipped.push({ modality: 'fuerza', date: d, start_time: st });
+            }
+          }
+          if (create_personalizado) {
+            const cap = capacity || 2;
+            const check = await pool.query('SELECT id FROM slots WHERE modality=$1 AND date=$2 AND start_time=$3', ['personalizado', d, st]);
+            if (check.rows.length === 0) {
+              const r = await pool.query('INSERT INTO slots (modality,date,start_time,end_time,capacity) VALUES ($1,$2,$3,$4,$5) RETURNING *', ['personalizado', d, st, et, cap]);
+              created.push(r.rows[0]);
+            } else {
+              skipped.push({ modality: 'personalizado', date: d, start_time: st });
+            }
+          }
+        }
+      }
+    }
+
+    if (created.length === 0) {
+      return res.status(400).json({ error: 'Todos los horarios seleccionados ya existen.' });
+    }
+
+    return res.status(201).json({
+      message: `¡Creados ${created.length} cupo(s)! ${skipped.length > 0 ? `(${skipped.length} ya existían y se omitieron)` : ''}`,
+      slots: created,
+      skipped
+    });
+  } catch (e) {
+    console.error('Error creating slot:', e);
+    return res.status(500).json({ error: 'Error creating slot', detail: e.message });
+  }
 });
 
 app.post('/api/slots/weekly', authenticateToken, isAdmin, async (req, res) => {
@@ -402,7 +479,7 @@ app.post('/api/slots/weekly', authenticateToken, isAdmin, async (req, res) => {
         const st = start_times[i]; const et = end_times[i];
         if (create_fuerza) {
           const check = await pool.query('SELECT id FROM slots WHERE modality=$1 AND date=$2 AND start_time=$3', ['fuerza', d, st]);
-          if (check.rows.length === 0) { const r = await pool.query('INSERT INTO slots (modality,date,start_time,end_time,capacity) VALUES ($1,$2,$3,$4,$5) RETURNING *', ['fuerza', d, st, et, 5]); created.push(r.rows[0]); }
+          if (check.rows.length === 0) { const r = await pool.query('INSERT INTO slots (modality,date,start_time,end_time,capacity) VALUES ($1,$2,$3,$4,$5) RETURNING *', ['fuerza', d, st, et, 6]); created.push(r.rows[0]); }
           else skipped.push({ modality: 'fuerza', date: d, start_time: st });
         }
         if (create_personalizado) {

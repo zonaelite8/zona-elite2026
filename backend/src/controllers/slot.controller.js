@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
 // BUSINESS RULES:
-// - Fuerza max capacity: 5. If fuerza >= 3, personalizado is BLOCKED.
+// - Fuerza max capacity: 6. If fuerza >= 3, personalizado is BLOCKED.
 // - Personalizado max capacity: 2. If personalizado >= 2, fuerza is BLOCKED.
 // - Both modalities can coexist in the same time block.
 
@@ -132,7 +132,7 @@ const createSlot = async (req, res) => {
           if (fuerzaCheck.rows.length === 0) {
             const r = await db.query(
               'INSERT INTO slots (modality, date, start_time, end_time, capacity) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-              ['fuerza', d, st, et, 5]
+              ['fuerza', d, st, et, 6]
             );
             created.push(r.rows[0]);
           } else {
@@ -263,7 +263,7 @@ const createWeeklySlots = async (req, res) => {
 
         for (const tb of timeBlocks) {
           for (const modality of ['fuerza', 'personalizado']) {
-            const capacity = modality === 'fuerza' ? 5 : 2;
+            const capacity = modality === 'fuerza' ? 6 : 2;
             const check = await db.query(
               'SELECT id FROM slots WHERE modality = $1 AND date = $2 AND start_time = $3',
               [modality, dateStr, tb.start_time]

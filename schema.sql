@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS slots (
     date DATE NOT NULL,
     start_time TIME NOT NULL,
     end_time TIME NOT NULL,
-    capacity INT NOT NULL, -- e.g. 5 for fuerza, 2 for personalizado
+    capacity INT NOT NULL, -- e.g. 6 for fuerza, 2 for personalizado
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT unique_slot_time UNIQUE (modality, date, start_time)
 );
@@ -43,8 +43,8 @@ CREATE INDEX IF NOT EXISTS idx_bookings_slot ON bookings(slot_id);
 -- Insert default slots seed (sample data)
 INSERT INTO slots (modality, date, start_time, end_time, capacity)
 VALUES 
-('fuerza', CURRENT_DATE, '08:00:00', '09:00:00', 5),
-('fuerza', CURRENT_DATE, '09:00:00', '10:00:00', 5),
+('fuerza', CURRENT_DATE, '08:00:00', '09:00:00', 6),
+('fuerza', CURRENT_DATE, '09:00:00', '10:00:00', 6),
 ('personalizado', CURRENT_DATE, '10:00:00', '11:00:00', 2),
 ('personalizado', CURRENT_DATE, '11:00:00', '12:00:00', 2)
 ON CONFLICT DO NOTHING;

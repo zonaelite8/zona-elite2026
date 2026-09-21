@@ -101,6 +101,8 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
       )
     `);
     await client.query('ALTER TABLE slots ADD COLUMN IF NOT EXISTS is_blocked BOOLEAN DEFAULT FALSE');
+    // Ensure all existing fuerza slots have capacity = 6
+    await client.query("UPDATE slots SET capacity = 6 WHERE modality = 'fuerza' AND capacity = 5");
     console.log("Tabla 'slots' verificada.");
 
     // 5. Crear tabla bookings
@@ -166,8 +168,8 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
     `);
     
     const officialPlans = [
-      ['Entrenamiento Funcional - Plan Básico', 'Entrenamiento semipersonalizado con máximo 5 personas.', 3, 12, 'funcional', 12, 170000, true],
-      ['Entrenamiento Funcional - Plan Avanzado', 'Entrenamiento semipersonalizado con máximo 5 personas.', 5, 20, 'funcional', 20, 230000, true],
+      ['Entrenamiento Funcional - Plan Básico', 'Entrenamiento semipersonalizado con máximo 6 personas.', 3, 12, 'funcional', 12, 170000, true],
+      ['Entrenamiento Funcional - Plan Avanzado', 'Entrenamiento semipersonalizado con máximo 6 personas.', 5, 20, 'funcional', 20, 230000, true],
       ['Plan Élite Básico (Deportistas)', 'Entrenamiento 100% personalizado, enfocado a la necesidad específica de cada deportista.', 1, 4, 'personalizado', 4, 160000, true],
       ['Plan Élite Avanzado', 'Entrenamiento 100% personalizado, enfocado a la necesidad específica del deportista.', 2, 8, 'personalizado', 8, 280000, true]
     ];
@@ -176,7 +178,7 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
       await client.query(`
         INSERT INTO plans (name, description, classes_per_week, sessions_per_month, modality_type, default_classes, price, is_active)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        ON CONFLICT (name) DO UPDATE SET price = EXCLUDED.price
+        ON CONFLICT (name) DO UPDATE SET price = EXCLUDED.price, description = EXCLUDED.description
       `, p);
     }
     console.log("Planes oficiales verificados e insertados/actualizados.");
@@ -188,8 +190,8 @@ async function initializeDatabaseAndAdmin(shouldExit = true) {
       await client.query(`
         INSERT INTO slots (modality, date, start_time, end_time, capacity)
         VALUES 
-        ('fuerza', CURRENT_DATE, '08:00:00', '09:00:00', 5),
-        ('fuerza', CURRENT_DATE, '09:00:00', '10:00:00', 5),
+        ('fuerza', CURRENT_DATE, '08:00:00', '09:00:00', 6),
+        ('fuerza', CURRENT_DATE, '09:00:00', '10:00:00', 6),
         ('personalizado', CURRENT_DATE, '10:00:00', '11:00:00', 2),
         ('personalizado', CURRENT_DATE, '11:00:00', '12:00:00', 2)
       `);

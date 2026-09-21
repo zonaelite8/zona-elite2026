@@ -19,7 +19,7 @@ INSERT INTO plans (name, description, classes_per_week, sessions_per_month, moda
 VALUES
   (
     'Entrenamiento Funcional - Plan Básico',
-    'Entrenamiento semipersonalizado con máximo 5 personas. Cada atleta entrena a su ritmo en un ambiente de grupo pequeño y enfocado.',
+    'Entrenamiento semipersonalizado con máximo 6 personas. Cada atleta entrena a su ritmo en un ambiente de grupo pequeño y enfocado.',
     3,
     12,
     'funcional',
@@ -29,7 +29,7 @@ VALUES
   ),
   (
     'Entrenamiento Funcional - Plan Avanzado',
-    'Entrenamiento semipersonalizado con máximo 5 personas. Cada atleta entrena a su ritmo en un ambiente de grupo pequeño y enfocado.',
+    'Entrenamiento semipersonalizado con máximo 6 personas. Cada atleta entrena a su ritmo en un ambiente de grupo pequeño y enfocado.',
     5,
     20,
     'funcional',

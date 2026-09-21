@@ -404,7 +404,7 @@ export function ClientDashboard({ onLogout, user, onLogin }: any) {
                     </p>
                   </div>
                   <div className="text-[10px] text-muted-foreground bg-secondary/40 p-2.5 rounded-xl border border-border/80 max-w-xs">
-                    💡 <strong className="text-foreground">Cupos máx:</strong> Fuerza (5 personas) / Personalizado (2 personas). Se bloquean mutuamente al llenarse.
+                    💡 <strong className="text-foreground">Cupos máx:</strong> Fuerza (6 personas) / Personalizado (2 personas). Se bloquean mutuamente al llenarse.
                   </div>
                 </div>
 

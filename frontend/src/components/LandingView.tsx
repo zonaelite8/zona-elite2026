@@ -78,7 +78,7 @@ export function LandingView({ onNavigate }: Props) {
               icon={<Dumbbell className="text-primary w-10 h-10" />}
               title="Entrenamientos Personalizados de Fuerza"
               desc="Sesiones enfocadas en hipertrofia y fuerza máxima. Espacio equipado con racks de competición y discos calibrados."
-              badge="Máx. 5 personas / turno"
+              badge="Máx. 6 personas / turno"
             />
             <ModalidadCard
               icon={<Activity className="text-primary w-10 h-10" />}

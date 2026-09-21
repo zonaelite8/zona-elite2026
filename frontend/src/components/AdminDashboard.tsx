@@ -1294,7 +1294,7 @@ export function AdminDashboard({ onLogout }: any) {
                     <input type="checkbox" checked={createFuerza} onChange={() => {}} className="pointer-events-none rounded border-border text-primary h-4 w-4 bg-background accent-primary shrink-0" />
                     <div className="flex flex-col">
                       <span className="text-sm">🏋️ Entrenamientos Personalizados de Fuerza</span>
-                      <span className="text-[10px] opacity-75 font-normal">Capacidad máx: 5</span>
+                      <span className="text-[10px] opacity-75 font-normal">Capacidad máx: 6</span>
                     </div>
                   </div>
                   <div 
