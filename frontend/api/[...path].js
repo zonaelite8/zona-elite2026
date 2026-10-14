@@ -133,15 +133,6 @@ app.get('/api/debug', (req, res) => res.json({ url: req.url, originalUrl: req.or
 // ─── Wake / Health ───────────────────────────────────────────────────────────
 app.get('/api/wake', (req, res) => res.json({ status: 'awake', ts: Date.now() }));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', message: 'Zona Elite API on Vercel Serverless', version: '6.0.0-GMAIL-SMTP-ACTIVE' }));
-app.get('/api/test-email', async (req, res) => {
-  try {
-    const targetEmail = req.query.email || 'zonaelite8@gmail.com';
-    const result = await sendEmail(targetEmail, 'Prueba Zona Elite', 'Este es un correo de prueba de Zona Elite', '<h1>Correo de prueba exitoso</h1>');
-    res.json({ result, targetEmail, smtpGmailUser });
-  } catch (e) {
-    res.status(500).json({ success: false, error: e.message, stack: e.stack });
-  }
-});
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // AUTH ROUTES
@@ -162,8 +153,8 @@ app.post(['/api/auth/register', '/auth/register'], async (req, res) => {
     );
     const user = result.rows[0];
 
-    // Send 6-digit verification code email via Google SSL Direct SMTP in background
-    sendEmail(
+    // Await emails: Vercel freezes the function after the response, dropping background sends
+    const emails = [sendEmail(
       cleanEmail,
       'Código de Verificación - Zona Élite',
       `Tu código de verificación es: ${code}`,
@@ -174,21 +165,18 @@ app.post(['/api/auth/register', '/auth/register'], async (req, res) => {
          <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
        </div>
        <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
-    ).catch(emailErr => console.error('Verification email error:', emailErr));
+    )];
 
     // Send admin notification to zonaelite8@gmail.com
     if (cleanEmail !== 'zonaelite8@gmail.com') {
-      try {
-        sendEmail(
-          'zonaelite8@gmail.com',
-          `Nuevo Registro: ${name}`,
-          `Un nuevo cliente se acaba de registrar: ${name} (${cleanEmail})`,
-          `<p style="font-size:16px"><strong>¡Nuevo cliente registrado!</strong></p><p><strong>Nombre:</strong> ${name}</p><p><strong>Correo:</strong> ${cleanEmail}</p><p><strong>Teléfono:</strong> ${phone || 'No especificado'}</p>`
-        );
-      } catch (e) {
-        console.error('Admin notification error:', e);
-      }
+      emails.push(sendEmail(
+        'zonaelite8@gmail.com',
+        `Nuevo Registro: ${name}`,
+        `Un nuevo cliente se acaba de registrar: ${name} (${cleanEmail})`,
+        `<p style="font-size:16px"><strong>¡Nuevo cliente registrado!</strong></p><p><strong>Nombre:</strong> ${name}</p><p><strong>Correo:</strong> ${cleanEmail}</p><p><strong>Teléfono:</strong> ${phone || 'No especificado'}</p>`
+      ));
     }
+    await Promise.all(emails);
 
     return res.status(201).json({ message: 'Registro exitoso. Revisa tu correo para ingresar el código de verificación.', needsVerification: true, user });
   } catch (e) { console.error('Register error:', e); return res.status(500).json({ error: 'Error en el registro', detail: e.message }); }
@@ -253,8 +241,7 @@ app.post(['/api/auth/resend-code', '/auth/resend-code'], async (req, res) => {
     const code = user.verify_token || Math.floor(100000 + Math.random() * 900000).toString();
     await pool.query('UPDATE users SET verify_token = $1 WHERE id = $2', [code, user.id]);
 
-    // Send 6-digit verification code in background
-    sendEmail(
+    await sendEmail(
       cleanEmail,
       'Código de Verificación - Zona Élite',
       `Tu código de verificación es: ${code}`,
@@ -265,7 +252,7 @@ app.post(['/api/auth/resend-code', '/auth/resend-code'], async (req, res) => {
          <span style="font-size:42px;font-weight:900;letter-spacing:12px;color:#f59e0b;font-family:monospace">${code}</span>
        </div>
        <p style="font-size:13px;color:#a1a1aa;text-align:center">Ingresa este código en la aplicación para activar tu cuenta.</p>`
-    ).catch(emailErr => console.error('Resend email error:', emailErr));
+    );
 
     return res.json({ message: 'Se ha reenviado un nuevo código a tu correo.' });
   } catch (e) {
@@ -311,7 +298,7 @@ app.post(['/api/auth/forgot-password', '/auth/forgot-password'], async (req, res
     const origin = req.headers.origin || 'https://zonaelitemarinilla.com';
     const resetUrl = `${origin}/restablecer?token=${resetToken}`;
 
-    sendEmail(
+    await sendEmail(
       cleanEmail,
       'Restablecer Contraseña - Zona Élite',
       `Restablece tu contraseña usando este enlace: ${resetUrl}`,
@@ -321,7 +308,7 @@ app.post(['/api/auth/forgot-password', '/auth/forgot-password'], async (req, res
          <a href="${resetUrl}" style="background:#f59e0b;color:#000000;padding:14px 28px;border-radius:10px;text-decoration:none;font-weight:800;font-size:15px;display:inline-block">Restablecer Contraseña</a>
        </div>
        <p style="font-size:13px;color:#a1a1aa;text-align:center">Este enlace expira en 1 hora.</p>`
-    ).catch(emailErr => console.error('Forgot password email error:', emailErr));
+    );
 
     return res.json({ message: 'Si el correo está registrado, recibirás las instrucciones de recuperación.' });
   } catch (e) { return res.status(500).json({ error: 'Error al procesar la solicitud', detail: e.message }); }
@@ -562,11 +549,23 @@ app.get('/api/bookings/all', authenticateToken, isAdmin, async (req, res) => {
   } catch (e) { return res.status(500).json({ error: 'Internal server error' }); }
 });
 
+async function notifyCancellation(bookingId) {
+  try {
+    const info = (await pool.query('SELECT u.name, s.modality, s.date, s.start_time FROM bookings b JOIN users u ON b.user_id = u.id JOIN slots s ON b.slot_id = s.id WHERE b.id = $1', [bookingId])).rows[0];
+    if (!info) return;
+    const dateFormatted = new Date(info.date).toLocaleDateString('es-CO', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const hour = formatTo12Hour(info.start_time);
+    await pool.query('INSERT INTO notifications (message, type) VALUES ($1, $2)', [`${info.name} canceló ${info.modality} el ${dateFormatted} a las ${hour}`, 'cancelation']);
+    await sendEmail('zonaelite8@gmail.com', `Reserva CANCELADA: ${info.modality} - ${dateFormatted}`, '', `<h2>Reserva Cancelada</h2><p>El cliente <strong>${info.name}</strong> canceló su reserva.</p><p><strong>Modalidad:</strong> ${info.modality}</p><p><strong>Fecha:</strong> ${dateFormatted}</p><p><strong>Hora:</strong> ${hour}</p><p>El cupo ha sido liberado automáticamente.</p>`);
+  } catch (e) { console.error('Cancel notification error:', e.message); }
+}
+
 app.delete('/api/bookings/:id', authenticateToken, async (req, res) => {
   try {
     const booking = (await pool.query('SELECT * FROM bookings WHERE id = $1', [req.params.id])).rows[0];
     if (!booking) return res.status(404).json({ error: 'Reserva no encontrada' });
     if (booking.user_id !== req.user.id && req.user.role !== 'admin') return res.status(403).json({ error: 'No autorizado' });
+    if (booking.user_id === req.user.id) await notifyCancellation(booking.id);
     await pool.query('DELETE FROM bookings WHERE id = $1', [req.params.id]);
     await pool.query('UPDATE users SET available_classes = available_classes + 1 WHERE id = $1', [booking.user_id]);
     return res.json({ message: 'Reserva cancelada exitosamente' });
@@ -586,6 +585,7 @@ app.post('/api/bookings/cancel-token', async (req, res) => {
     const { token } = req.body;
     const booking = (await pool.query('SELECT * FROM bookings WHERE cancel_token = $1', [token])).rows[0];
     if (!booking) return res.status(404).json({ error: 'Reserva no encontrada o ya fue cancelada' });
+    await notifyCancellation(booking.id);
     await pool.query('DELETE FROM bookings WHERE id = $1', [booking.id]);
     await pool.query('UPDATE users SET available_classes = available_classes + 1 WHERE id = $1', [booking.user_id]);
     return res.json({ message: 'Reserva cancelada exitosamente' });

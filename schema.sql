@@ -40,6 +40,18 @@ CREATE INDEX IF NOT EXISTS idx_slots_date ON slots(date);
 CREATE INDEX IF NOT EXISTS idx_bookings_user ON bookings(user_id);
 CREATE INDEX IF NOT EXISTS idx_bookings_slot ON bookings(slot_id);
 
+-- Safety net: fuerza slots always have capacity 6, even if an outdated server inserts 5
+CREATE OR REPLACE FUNCTION fuerza_capacidad_6() RETURNS trigger AS $$
+BEGIN
+  IF NEW.modality = 'fuerza' AND NEW.capacity < 6 THEN NEW.capacity := 6; END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_fuerza_capacidad_6 ON slots;
+CREATE TRIGGER trg_fuerza_capacidad_6 BEFORE INSERT OR UPDATE OF capacity ON slots
+  FOR EACH ROW EXECUTE FUNCTION fuerza_capacidad_6();
+
 -- Insert default slots seed (sample data)
 INSERT INTO slots (modality, date, start_time, end_time, capacity)
 VALUES 
