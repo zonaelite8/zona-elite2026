@@ -130,9 +130,16 @@ export function LandingView({ onNavigate }: Props) {
         <p className="text-sm text-muted-foreground">
           © {new Date().getFullYear()} Zona Élite — Todos los derechos reservados.
         </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          Desarrollado por <span className="font-semibold text-foreground">Imagia</span>
-        </p>
+        <a
+          href="https://imagia-mu.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 mt-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Desarrollado por
+          <img src="/imagia-isotipo.svg" alt="" className="w-6 h-6" />
+          <span className="font-bold tracking-wide text-foreground">IMAGIA</span>
+        </a>
       </footer>
 
       {/* ── Floating WhatsApp Button (Portaled to body to escape CSS transforms) ── */}
