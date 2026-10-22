@@ -130,6 +130,9 @@ export function LandingView({ onNavigate }: Props) {
         <p className="text-sm text-muted-foreground">
           © {new Date().getFullYear()} Zona Élite — Todos los derechos reservados.
         </p>
+        <p className="text-xs text-muted-foreground mt-2">
+          Desarrollado por <span className="font-semibold text-foreground">Imagia</span>
+        </p>
       </footer>
 
       {/* ── Floating WhatsApp Button (Portaled to body to escape CSS transforms) ── */}
